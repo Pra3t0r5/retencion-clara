@@ -1,134 +1,169 @@
 # Tasks: Core Tax Calculator
 
-**Status**: Ready  
-**Priority**: P1  
-**Branch**: `feature/001-tax-calculator`
+**Input**: `specs/001-tax-calculator/spec.md` + `specs/001-tax-calculator/plan.md`
+**Prerequisites**: spec.md ✅ | plan.md ✅
+**Tests**: Vitest unit tests — spec requires `npm test` ≥60% coverage on `src/engine/`
 
-Execute in order. Mark `[x]` when done. `[P]` = parallel with previous task.
+**Organization**: Tasks grouped by user story for independent implementation + testing.
 
----
+## Format: `[ID] [P?] [Story] Description`
 
-## Phase 1: Engine Refactor
-
-### Task 1.1: Extract tax tables
-- [ ] Create `src/tablas/2026-H1.ts`
-- [ ] Define `TaxBracket` type: `{ desde, hasta, fijo, pct }`
-- [ ] Add all 10 brackets (H1 2026 ARCA) — verify bracket 8 matches recibo observation
-- [ ] Export `TABLAS_2026_H1`: `{ gni_mensual, ded_especial_mensual, ded_conyuge_anual, ded_hijo_anual, tramos }`
-- **Test**: file compiles, TypeScript types correct
-- **Time**: 30m
-
-### Task 1.2: Define Zod schemas
-- [ ] Create `src/engine/schemas.ts`
-- [ ] Define `PayslipDataSchema` — all cumulative fields from recibo "Detalle de Calculo"
-- [ ] Define `F572DataSchema` — cargas familia + cuota médica/indumentaria por mes
-- [ ] Define `TaxResultSchema` — gnsi, impuesto, retencion_mes, gap, proyecciones
-- [ ] Export inferred TypeScript types
-- **Test**: `zod.parse()` succeeds on Fernando's real data constants
-- **Time**: 30m
-
-### Task 1.3: Implement calculator engine
-- [ ] Create `src/engine/calculator.ts`
-- [ ] `calcularGNSI(data: PayslipData): number` — bruto - aportes - deducciones generales - deducciones personales
-- [ ] `calcularImpuesto(gnsi: number, tablas: Tablas): number` — bracket lookup + fijo + pct on excedente
-- [ ] `calcularRetencionMes(impuesto: number, retenidoAnterior: number): number`
-- [ ] `calcularGap(payslip: PayslipData, f572: F572Data): GapAnalysis`
-- [ ] `proyectarAbril(payslip: PayslipData, f572: F572Data): ProyeccionAbril`
-- [ ] `proyectarAnual(payslip: PayslipData, f572: F572Data): ProyeccionAnual`
-- **Test**: TypeScript compiles, no `any`
-- **Time**: 2h
-
-### Task 1.4: Write unit tests
-- [ ] Create `src/engine/calculator.test.ts`
-- [ ] Test `calcularGNSI` → result must equal $14.805.322 ± $100
-- [ ] Test `calcularImpuesto` → result must equal $3.549.634 ± $100
-- [ ] Test `calcularRetencionMes` → result must equal $1.220.273,92 ± $100
-- [ ] Test `calcularGap` → indumentaria $425.295 ± $100, cuota médica $670.449 ± $100
-- [ ] Test edge: zero GNSI → impuesto = 0
-- [ ] Test edge: GNSI below first bracket → 5% rate applies
-- **Test**: `make test` → all pass
-- **Time**: 1h
-
-### [P] Task 1.5: Update `src/data.ts`
-- [ ] Import and use `PayslipDataSchema` + `F572DataSchema` for type safety
-- [ ] Keep hardcoded Fernando data as typed constants
-- [ ] Delete anything now in `src/tablas/2026-H1.ts`
-- **Test**: `make test` still passes, no regressions
-- **Time**: 20m
+- **[P]**: Can run in parallel (different files, no shared dependencies)
+- **[US#]**: User story from spec.md
+- All paths relative to repo root
 
 ---
 
-## Phase 2: Wire UI to Engine
+## Phase 1: Setup (Shared Infrastructure)
 
-### Task 2.1: Update `src/calculator.ts`
-- [ ] Replace current simplified calculator with calls to `src/engine/calculator.ts`
-- [ ] Delete hardcoded `tramo_actual` observation
-- [ ] All exported functions now delegate to engine
-- **Test**: `make test` passes, App.tsx shows same numbers
-- **Time**: 30m
+**Purpose**: Install missing dependencies and initialize test runner.
 
-### [P] Task 2.2: Smoke test in browser
-- [ ] `npm run dev` → open http://localhost:5173
-- [ ] Verify "Resumen" tab numbers unchanged vs current
-- [ ] Verify on mobile viewport (DevTools → iPhone 14)
-- [ ] Verify dark mode renders correctly
-- **Test**: Manual visual check — numbers match, layout works on 390px width
-- **Time**: 15m
+- [ ] T001 Install runtime + dev dependencies: `npm install zod && npm install -D vitest @vitest/ui`
+- [ ] T002 Add vitest config block to `vite.config.ts`: `test: { globals: true, environment: 'node' }`
+- [ ] T003 Add `"test": "vitest run"` and `"test:ui": "vitest --ui"` to scripts in `package.json`
+- [ ] T004 Verify runner works: `npm test` exits cleanly (no test files yet — expect "no tests found" or exit 0)
 
 ---
 
-## Phase 3: Manual Entry Form
+## Phase 2: Foundational (Blocking Prerequisites)
 
-### Task 3.1: PayslipForm component
-- [ ] Create `src/components/PayslipForm.tsx`
-- [ ] Fields: meses, bruto_acumulado, aportes_acumulados, indumentaria_aplicada, cuota_medica_aplicada, ded_especial, gni, ded_conyuge, ded_hijos, ded_especial_12, retencion_acumulada
-- [ ] Number inputs with `es-AR` formatting hint
-- [ ] Zod validate on change, show errors inline
-- [ ] "Usar datos de Fernando" button pre-fills form
-- **Test**: Form renders, pre-fill works, validation catches non-numbers
-- **Time**: 2h
+**Purpose**: ARCA tax tables and Zod schemas that ALL user stories depend on.
 
-### Task 3.2: F572Form component
-- [ ] Create `src/components/F572Form.tsx`
-- [ ] Cargas familia: checkboxes cónyuge + hijos count
-- [ ] Cuota médica: 12 month inputs (Jan–Dec)
-- [ ] Indumentaria: 12 month inputs (Jan–Dec)
-- [ ] Running total shown as user types
-- **Test**: Form renders, totals update live
-- **Time**: 1.5h
+**⚠️ CRITICAL**: No user story implementation begins until this phase is complete.
 
-### Task 3.3: Wire forms into App
-- [ ] Add "Ingresar datos" tab to `App.tsx`
-- [ ] `useState` for `PayslipData` + `F572Data`
-- [ ] Pass state to calculator → results update live
-- [ ] Pre-load Fernando's data as default state
-- **Test**: Change a field → result updates in "Resumen" tab
-- **Time**: 1h
+- [ ] T005 Create `src/tablas/2026-H1.ts`: define `TaxBracket = { desde: number; hasta: number; fijo: number; pct: number }` and export `TABLAS_2026_H1` with all 10 ARCA H1 2026 tramos (values in `specs/001-tax-calculator/spec.md` tax scale table)
+- [ ] T006 [P] Add deduction limits to `src/tablas/2026-H1.ts`: `gni_mensual`, `ded_especial_mensual`, `ded_conyuge_anual`, `ded_hijo_anual` (values in spec.md "Deduction Caps" table)
+- [ ] T007 [P] Create `src/engine/schemas.ts`: add Zod schema `PayslipData` with all cumulative fields from spec.md "Key Schemas" section; export inferred type
+- [ ] T008 Add Zod schema `F572Data` to `src/engine/schemas.ts`: conyuge (boolean), hijos (number), cuota_medica (per-month record), indumentaria (per-month record); export type
+- [ ] T009 [P] Add Zod schemas `TaxResult` and `GapAnalysis` to `src/engine/schemas.ts`; export all inferred types
+- [ ] T010 Update `src/data.ts`: add `satisfies PayslipData` and `satisfies F572Data` type assertions to existing `RECIBO_MAR` and `F572` constants; remove fields now exported from `src/tablas/2026-H1.ts`; verify `npx tsc --noEmit` passes
+
+**Checkpoint**: `npx tsc --noEmit` — zero errors. Schemas compile.
 
 ---
 
-## Phase 4: Final Polish
+## Phase 3: User Story 1 — Manual Entry → Correct Tax Result (Priority: P1) 🎯 MVP
 
-### Task 4.1: Full test + lint pass
-- [ ] `make ci` → format + lint + test + build all pass
-- [ ] Fix any lint warnings
-- **Time**: 30m
+**Goal**: Pure engine that accepts `PayslipData` + `F572Data` and returns correct GNSI, impuesto, retención del mes.
 
-### Task 4.2: PR
-- [ ] `git push origin feature/001-tax-calculator`
-- [ ] Open PR to `main` via `gh pr create`
-- [ ] PR description links to spec.md
-- **Time**: 10m
+**Independent Test**: `npm test` → all 4 test assertions green: GNSI ≈ $14.805.322 ± $100, impuesto ≈ $3.549.634 ± $100, retención mes ≈ $1.220.273,92 ± $100, edge cases pass.
+
+### Tests for US1 ⚠️ Write FIRST — must FAIL before implementation (T011–T014)
+
+- [ ] T011 [P] [US1] Create `src/engine/calculator.test.ts`: import `RECIBO_MAR` from `src/data.ts`; add test `calcularGNSI(RECIBO_MAR)` returns value within 100 of 14805322
+- [ ] T012 [P] [US1] Add test to `src/engine/calculator.test.ts`: `calcularImpuesto(gnsi)` returns value within 100 of 3549634 for GNSI $14.805.322
+- [ ] T013 [P] [US1] Add test to `src/engine/calculator.test.ts`: `calcularRetencionMes(impuesto, retenidoAnterior)` returns value within 100 of 1220274
+- [ ] T014 [P] [US1] Add edge case tests to `src/engine/calculator.test.ts`: GNSI = 0 → impuesto = 0; GNSI = 1000000 (below first tramo threshold) → rate is 5%
+
+### Implementation for US1
+
+- [ ] T015 [US1] Create `src/engine/calculator.ts`: add `calcularGNSI(data: PayslipData): number` — returns `bruto_acumulado - aportes_acumulados - indumentaria_aplicada - cuota_medica_aplicada - ded_especial - gni - ded_conyuge - ded_hijos - ded_especial_12`; zero React imports in this file
+- [ ] T016 [US1] Add `buscarTramo(gnsi: number): TaxBracket` to `src/engine/calculator.ts` — iterates `TABLAS_2026_H1.tramos` and returns the tramo where `gnsi >= desde && gnsi < hasta`
+- [ ] T017 [US1] Add `calcularImpuesto(gnsi: number): number` to `src/engine/calculator.ts` — calls `buscarTramo`, returns `tramo.fijo + tramo.pct * (gnsi - tramo.desde)`
+- [ ] T018 [US1] Add `calcularRetencionMes(impuesto: number, retencionAcumuladaAnterior: number): number` to `src/engine/calculator.ts` — returns `Math.max(0, impuesto - retencionAcumuladaAnterior)`
+
+**Checkpoint**: `npm test` — US1 tests green. GNSI / impuesto / retención mes match recibo ± $100.
 
 ---
 
-## Sign-Off
+## Phase 4: User Story 2 — F.572 Gap Analysis (Priority: P1)
 
-- [ ] All tasks complete
-- [ ] `make test` passes
-- [ ] Calculator matches Fernando's recibo ± $100
-- [ ] Manual entry form works for any user
-- [ ] App installable as PWA on iPhone
-- [ ] PR merged to main
+**Goal**: Engine computes gap between declared F.572 deductions and what the employer applied.
 
-**Verified test data**: `specs/001-tax-calculator/spec.md` section "Real Test Data"
+**Independent Test**: `npm test` → indumentaria gap $425.295 ± $100, cuota médica gap $670.449 ± $100, ahorro estimado $339.680 ± $500.
+
+### Tests for US2 ⚠️ Write FIRST — must FAIL before implementation (T019–T022)
+
+- [ ] T019 [P] [US2] Add test to `src/engine/calculator.test.ts`: `calcularGap(RECIBO_MAR, F572, 3).indumentaria_gap` within 100 of 425295
+- [ ] T020 [P] [US2] Add test to `src/engine/calculator.test.ts`: `calcularGap(RECIBO_MAR, F572, 3).cuota_medica_gap` within 100 of 670449
+- [ ] T021 [P] [US2] Add test to `src/engine/calculator.test.ts`: `calcularGap(RECIBO_MAR, F572, 3).ahorro_estimado` within 500 of 339680
+- [ ] T022 [US2] Add edge case test: when F572 declared equals payslip applied → `total_gap = 0`, `ahorro_estimado = 0`
+
+### Implementation for US2
+
+- [ ] T023 [US2] Add `calcularGap(payslip: PayslipData, f572: F572Data, meses: number): GapAnalysis` to `src/engine/calculator.ts`: sum F572 cuota_medica months 1..meses, sum indumentaria months 1..meses; subtract payslip applied amounts; compute `ahorro_estimado = total_gap * buscarTramo(gnsi).pct`
+- [ ] T024 [US2] Update `src/calculator.ts` (root level file): import from `src/engine/calculator.ts`; delegate `calcularGaps()` → `calcularGap(RECIBO_MAR, F572, RECIBO_MAR.meses)`; keep same export signatures so `App.tsx` needs no changes
+
+**Checkpoint**: `npm test` — US1 + US2 all pass. App renders same numbers as before refactor.
+
+---
+
+## Phase 5: User Story 3 — Monthly Projection (Priority: P2)
+
+**Goal**: Engine projects April retention and annual retention at current salary run-rate.
+
+**Independent Test**: `proyectarAbril()` returns `retencion_abr_estimada < RECIBO_MAR.retencion_mes` when gap > 0; `proyectarAnual()` returns `efectiva_rate` between 0.10 and 0.40.
+
+### Implementation for US3
+
+- [ ] T025 [US3] Add `proyectarAbril(payslip: PayslipData, f572: F572Data): ProyeccionAbril` to `src/engine/calculator.ts`: sum retroactive gap (Ene-Mar) + April new deductions; multiply total by tramo pct; subtract from retencion_mes; floor at 0
+- [ ] T026 [US3] Add `proyectarAnual(payslip: PayslipData): ProyeccionAnual` to `src/engine/calculator.ts`: bruto monthly = bruto_acumulado / meses; bruto_anual = monthly × 12; estimate months 4-12 at 70% of retencion_mes; sum with retencion_acumulada; compute efectiva_rate
+- [ ] T027 [US3] Update `src/calculator.ts` (root level): delegate `proyectarAbril()` + `proyectarAnual()` to engine equivalents
+- [ ] T028 [P] [US3] Add smoke test to `src/engine/calculator.test.ts`: `proyectarAbril(RECIBO_MAR, F572).retencion_abr_estimada < RECIBO_MAR.retencion_mes`
+
+**Checkpoint**: App.tsx Resumen tab unchanged. All `npm test` pass.
+
+---
+
+## Phase 6: User Story 4 — Manual Entry Form (Priority: P1)
+
+**Goal**: Any user can enter their own payslip data — app is no longer Fernando-only.
+
+**Independent Test**: Enter Fernando data manually → same result as hardcoded. Change bruto_acumulado → ResultadoCard updates. Submit empty form → validation errors shown.
+
+### Implementation for US4
+
+- [ ] T029 [US4] Create `src/components/PayslipForm.tsx`: labeled `<input type="text">` for each `PayslipData` field; `parseARS(str)` helper that strips `$`, `.` separators and replaces `,` with `.`; Zod parse on submit; show inline error per field if parse fails
+- [ ] T030 [US4] Add "Usar datos de Fernando" button to `src/components/PayslipForm.tsx`: on click, pre-fills all inputs from `RECIBO_MAR` imported from `src/data.ts`
+- [ ] T031 [US4] Create `src/components/F572Form.tsx`: cónyuge checkbox + hijos number input; 12-month inputs for cuota_medica (Jan–Dec); 12-month inputs for indumentaria; running total label per category updates on change
+- [ ] T032 [US4] Update `src/App.tsx`: add `useState<PayslipData | null>(RECIBO_MAR)` and `useState<F572Data | null>(F572)`; add "Datos" tab that renders `<PayslipForm>` + `<F572Form>`; pass state through to calculator calls; show results only when both states non-null
+- [ ] T033 [US4] Update `src/App.tsx` result tabs: when either state is null, replace tab content with inline prompt "Ingresá tus datos en la pestaña Datos"
+
+**Checkpoint**: Submit Fernando data via form → results match old hardcoded version. Clear form → prompt shown.
+
+---
+
+## Phase 7: Polish & Cross-Cutting Concerns
+
+- [ ] T034 [P] Run `npx tsc --noEmit` — zero TypeScript errors; replace any `any` type with proper types
+- [ ] T035 [P] Run `npm run lint` — zero warnings; fix all reported issues
+- [ ] T036 Run `npm test` — all tests pass; confirm ≥60% line coverage on `src/engine/`
+- [ ] T037 Run `npm run build` — build succeeds, `dist/` generated without errors
+- [ ] T038 Run `npm run preview` — open browser; verify all tabs render and calculator produces correct output
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies — start immediately
+- **Foundational (Phase 2)**: Requires Phase 1 complete (zod installed)
+- **US1 (Phase 3)**: Requires Phase 2 — write T011–T014 tests first, then T015–T018
+- **US2 (Phase 4)**: Requires US1 complete (reuses `buscarTramo` + engine imports)
+- **US3 (Phase 5)**: Requires US2 complete (needs `calcularGap` result)
+- **US4 (Phase 6)**: Requires Phase 2 (schemas) + any engine function to call; can start in parallel with US2/US3 if scaffolding forms only
+- **Polish (Phase 7)**: Requires all phases complete
+
+### Parallel Opportunities
+
+- T005, T007, T009 — different files, run in parallel
+- T011, T012, T013, T014 — add to same file, run in sequence (or as parallel `describe` blocks)
+- T019, T020, T021 — same pattern, add sequentially
+- T034, T035 — independent checks, run in parallel
+
+### User Story Independence
+
+- **US1 (P1)**: Independent — validated by `npm test` alone
+- **US2 (P1)**: Builds on US1 engine — independently testable via gap assertions
+- **US3 (P2)**: Builds on US2 — independently testable via projection smoke test
+- **US4 (P1)**: Form layer is independent of US2/US3 engine tests; depends only on schemas
+
+---
+
+## Notes
+
+- PDF extraction (spec.md Scenario 3) → scoped to `specs/002-mvp-app-interface`, not this spec
+- `src/engine/` — zero React imports — pure TypeScript functions only
+- Fernando's data in `src/data.ts` is test fixture AND demo default — never delete it
+- ARS formatting helper `parseARS()` belongs in `src/components/` (UI concern) not `src/engine/`

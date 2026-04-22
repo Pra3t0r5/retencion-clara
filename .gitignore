@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Test fixtures (real payslip data — never commit)
+tests/fixtures/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

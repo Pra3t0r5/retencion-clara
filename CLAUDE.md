@@ -63,3 +63,10 @@ tests/            # Vitest unit tests for engine/
 ## AGENTS.md Governs Permissions
 
 See AGENTS.md for what agents can/cannot do.
+
+## Active Technologies
+- TypeScript (strict) + React 19 (feature/001-tax-calculator)
+- N/A — all state in React `useState`, nothing persisted (feature/001-tax-calculator)
+
+## Recent Changes
+- feature/001-tax-calculator: Added TypeScript (strict) + React 19

@@ -1,4 +1,4 @@
-import { RECIBO_MAR, F572, TABLAS_2026_H1 } from "./data";
+import { RECIBO_MAR, F572 } from "./data";
 
 export interface GapAnalysis {
   indumentaria_gap: number;
@@ -35,7 +35,7 @@ export function calcularGaps(): GapAnalysis {
   const total_gap = indumentaria_gap + cuota_medica_gap;
 
   // Current effective rate at GNSI bracket
-  const tax_rate = TABLAS_2026_H1.tramo_actual.pct;
+  const tax_rate = 0.31 /* bracket 8 — replaced by engine in Phase 3 */;
   const ahorro_estimado = total_gap * tax_rate;
 
   return { indumentaria_gap, cuota_medica_gap, total_gap, ahorro_estimado, tax_rate };
@@ -52,7 +52,7 @@ export function proyectarAbril(): ProyeccionAbril {
     gaps.total_gap + nueva_indumentaria_abr + nueva_cuota_medica_abr;
 
   const reduccion_retencion_estimada =
-    total_nuevas_deducciones * TABLAS_2026_H1.tramo_actual.pct;
+    total_nuevas_deducciones * 0.31 /* bracket 8 — replaced by engine in Phase 3 */;
 
   const retencion_abr_estimada = Math.max(
     0,

@@ -92,7 +92,7 @@ function TabMarzo() {
         <Row label="Aportes jubilación / OS" value={$(687_750.37)} />
         <Row label="Ganancias retenidas" value={$(RECIBO_MAR.retencion_mes)} />
         <div className="divider" />
-        <Row label="Neto acreditado" value={$(RECIBO_MAR.neto_mes)} highlight />
+        <Row label="Neto acreditado" value={$(RECIBO_MAR.neto_mes ?? 0)} highlight />
       </Card>
 
       <Card title="📊 Cálculo acumulado Ene–Mar">
