@@ -44,10 +44,11 @@ When writing code in `src/`:
 - Environment setup: copy `.env.example` → `.env`
 
 ### What Agents Should Remember Across Sessions
-- **Technology stack**: TypeScript 5.8, Node.js 22, Hono/Express framework
+- **Technology stack**: React 19, TypeScript, Vite 8, Zod — client-side only, no backend
 - **Code style**: Prettier config enforced, no `any` in TypeScript
-- **Deployment**: Docker Compose locally, SSH/SCP to production VM
+- **Deployment**: Vercel (static PWA) — `npm run build` → deploy
 - **CI/CD**: GitHub Actions auto-runs lint/test/build on push
+- **Tax domain**: Art. 94 4ta categoría, cumulative Jan→current month, ARCA tables in `src/tablas/`
 
 ## Communication Protocol
 
