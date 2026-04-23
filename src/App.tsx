@@ -2,8 +2,11 @@ import { useState } from "react";
 import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
 import { calcularGap, proyectarAbril, proyectarAnual } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
+import { PayslipData as PayslipSchema, F572Data as F572Schema } from "./engine/schemas";
 import { PayslipForm } from "./components/PayslipForm";
 import { F572Form } from "./components/F572Form";
+import { PDFDropzone } from "./components/PDFDropzone";
+import { DetalleCalculo } from "./components/DetalleCalculo";
 import "./index.css";
 
 const $ = (n: number) =>
@@ -84,31 +87,12 @@ function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data })
         <Row label="Total anual estimado" value={$(anual.retencion_total_anual)} highlight />
         <Row label="Tasa efectiva" value={pct(anual.efectiva_rate)} />
       </Card>
+
+      <DetalleCalculo payslip={payslip} />
     </>
   );
 }
 
-function TabRecibo({ payslip }: { payslip: PayslipData }) {
-  return (
-    <Card title={`📊 Cálculo acumulado — ${payslip.periodo ?? "período actual"}`}>
-      <Row label="Total remuneraciones gravadas" value={$(payslip.bruto_acumulado)} />
-      <Row label="Aportes de ley" value={`–${$(payslip.aportes_acumulados)}`} />
-      <Row label="Indumentaria aplicada" value={`–${$(payslip.indumentaria_aplicada)}`} />
-      <Row label="Cuota médica aplicada" value={`–${$(payslip.cuota_medica_aplicada)}`} />
-      <div className="divider" />
-      <Row label="Deducción especial" value={`–${$(payslip.ded_especial)}`} />
-      <Row label="GNI" value={`–${$(payslip.gni)}`} />
-      <Row label="Cónyuge" value={`–${$(payslip.ded_conyuge)}`} />
-      <Row label="Hijos" value={`–${$(payslip.ded_hijos)}`} />
-      <Row label="1/12 ded. personales" value={`–${$(payslip.ded_especial_12)}`} />
-      <div className="divider" />
-      <Row label="GNSI declarado en recibo" value={$(payslip.gnsi)} highlight />
-      <Row label="Impuesto determinado" value={$(payslip.impuesto_determinado)} highlight />
-      <Row label="Retención acumulada anterior" value={$(payslip.retencion_acumulada - payslip.retencion_mes)} />
-      <Row label="Retenido este mes" value={$(payslip.retencion_mes)} highlight />
-    </Card>
-  );
-}
 
 function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
   const mesNames = [
@@ -160,43 +144,62 @@ function TabDatos({
   onF572Change: (d: F572Data) => void;
 }) {
   const [section, setSection] = useState<"recibo" | "f572">("recibo");
+  const [reciboLowConf, setReciboLowConf] = useState<string[]>([]);
+  const [f572LowConf, setF572LowConf] = useState<string[]>([]);
+
+  async function handleReciboPDF(file: File) {
+    const { extractRecibo } = await import("./extractors/recibo");
+    const result = await extractRecibo(file);
+    setReciboLowConf(result._lowConfidence);
+    try {
+      const parsed = PayslipSchema.parse({ ...result, gnsi: result.gnsi ?? 0, impuesto_determinado: result.impuesto_determinado ?? 0 });
+      onPayslipChange(parsed);
+    } catch { /* low-confidence extraction — user reviews form */ }
+    return result;
+  }
+
+  async function handleF572PDF(file: File) {
+    const { extractF572 } = await import("./extractors/f572");
+    const result = await extractF572(file);
+    setF572LowConf(result._lowConfidence);
+    try {
+      const parsed = F572Schema.parse(result);
+      onF572Change(parsed);
+    } catch { /* user reviews form */ }
+    return result;
+  }
+
+  const btnActive = { background: "#2563eb", color: "#fff" };
+  const btnIdle = { background: "#e5e7eb", color: "#374151" };
+  const btnBase: React.CSSProperties = { flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 };
 
   return (
     <>
+      <PDFDropzone
+        label="Recibo de sueldo (PDF)"
+        onExtract={handleReciboPDF}
+        lowConfidenceFields={reciboLowConf}
+      />
+      <PDFDropzone
+        label="F.572 SiRADIG (PDF)"
+        onExtract={handleF572PDF}
+        lowConfidenceFields={f572LowConf}
+      />
+
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button
-          onClick={() => setSection("recibo")}
-          style={{
-            flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer",
-            background: section === "recibo" ? "#2563eb" : "#e5e7eb",
-            color: section === "recibo" ? "#fff" : "#374151", fontSize: 13, fontWeight: 600,
-          }}
-        >
+        <button onClick={() => setSection("recibo")} style={{ ...btnBase, ...(section === "recibo" ? btnActive : btnIdle) }}>
           Recibo de sueldo
         </button>
-        <button
-          onClick={() => setSection("f572")}
-          style={{
-            flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer",
-            background: section === "f572" ? "#2563eb" : "#e5e7eb",
-            color: section === "f572" ? "#fff" : "#374151", fontSize: 13, fontWeight: 600,
-          }}
-        >
+        <button onClick={() => setSection("f572")} style={{ ...btnBase, ...(section === "f572" ? btnActive : btnIdle) }}>
           F.572
         </button>
       </div>
 
       {section === "recibo" && (
-        <PayslipForm
-          initial={payslip ?? undefined}
-          onSubmit={onPayslipChange}
-        />
+        <PayslipForm initial={payslip ?? undefined} onSubmit={onPayslipChange} />
       )}
       {section === "f572" && (
-        <F572Form
-          initial={f572 ?? undefined}
-          onSubmit={onF572Change}
-        />
+        <F572Form initial={f572 ?? undefined} onSubmit={onF572Change} />
       )}
     </>
   );
@@ -204,7 +207,6 @@ function TabDatos({
 
 const TABS = [
   { id: "resumen", label: "Resumen" },
-  { id: "recibo", label: "Recibo" },
   { id: "f572", label: "F.572" },
   { id: "datos", label: "✏️ Datos" },
 ];
@@ -242,11 +244,6 @@ export default function App() {
             : <div className="note" style={{ marginTop: 32 }}>
                 Ingresá tus datos en la pestaña ✏️ Datos para ver el resumen.
               </div>
-        )}
-        {tab === "recibo" && (
-          payslip
-            ? <TabRecibo payslip={payslip} />
-            : <div className="note" style={{ marginTop: 32 }}>Sin datos de recibo todavía.</div>
         )}
         {tab === "f572" && (
           hasData
