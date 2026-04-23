@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RECIBO_MAR, F572 } from '../data';
-import { calcularGNSI, calcularImpuesto, calcularRetencionMes, calcularGap } from './calculator';
+import { calcularGNSI, calcularImpuesto, calcularRetencionMes, calcularGap, proyectarAbril } from './calculator';
 
 const TOLERANCE = 100;
 
@@ -71,7 +71,16 @@ describe('calcularGap', () => {
     expect(gap.ahorro_estimado).toBeGreaterThan(339_680 - 500);
     expect(gap.ahorro_estimado).toBeLessThan(339_680 + 500);
   });
+});
 
+describe('proyectarAbril', () => {
+  it('returns retencion_abr_estimada less than retencion_mes when gap > 0', () => {
+    const result = proyectarAbril(RECIBO_MAR, F572);
+    expect(result.retencion_abr_estimada).toBeLessThan(RECIBO_MAR.retencion_mes);
+  });
+});
+
+describe('calcularGap edge cases', () => {
   it('returns zero gap when F572 declared equals payslip applied', () => {
     const noGapF572 = {
       ...F572,

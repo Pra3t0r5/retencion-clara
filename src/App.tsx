@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { RECIBO_MAR, F572 } from "./data";
-import { calcularGaps, proyectarAbril, proyectarAnual } from "./calculator";
+import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
+import { calcularGap, proyectarAbril, proyectarAnual } from "./engine/calculator";
+import type { PayslipData, F572Data } from "./engine/schemas";
+import { PayslipForm } from "./components/PayslipForm";
+import { F572Form } from "./components/F572Form";
 import "./index.css";
 
 const $ = (n: number) =>
@@ -26,52 +29,57 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
   </div>
 );
 
-function TabResumen() {
-  const gaps = calcularGaps();
-  const abril = proyectarAbril();
-  const anual = proyectarAnual();
-  const totalAhorroAbril = gaps.ahorro_estimado + (abril.nueva_indumentaria_abr + abril.nueva_cuota_medica_abr) * gaps.tax_rate;
+function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data }) {
+  const gaps = calcularGap(payslip, f572, payslip.meses);
+  const abril = proyectarAbril(payslip, f572);
+  const anual = proyectarAnual(payslip, f572);
+  const totalAhorroAbril = gaps.ahorro_estimado +
+    (abril.nueva_indumentaria_abr + abril.nueva_cuota_medica_abr) * gaps.tax_rate;
 
   return (
     <>
       <div className="stat-grid">
         <div className="stat-card danger">
-          <div className="stat-label">Retenido Ene–Mar</div>
-          <div className="stat-value">{$(RECIBO_MAR.retencion_acumulada)}</div>
-          <div className="stat-sub">{$(RECIBO_MAR.retencion_mes)}/mes</div>
+          <div className="stat-label">Retenido acumulado</div>
+          <div className="stat-value">{$(payslip.retencion_acumulada)}</div>
+          <div className="stat-sub">{$(payslip.retencion_mes)}/mes</div>
         </div>
         <div className="stat-card success">
-          <div className="stat-label">Ahorro Abril est.</div>
+          <div className="stat-label">Ahorro próx. mes est.</div>
           <div className="stat-value">{$(totalAhorroAbril)}</div>
-          <div className="stat-sub">por F.572 rectific.</div>
+          <div className="stat-sub">por F.572</div>
         </div>
       </div>
 
       <Card title="📋 Gap F.572 — no aplicado aún">
-        <Row label="Indumentaria Ene–Mar declarada" value={$(F572.indumentaria.enero + F572.indumentaria.febrero + F572.indumentaria.marzo)} />
-        <Row label="Aplicada en recibo" value={$(RECIBO_MAR.indumentaria_aplicada)} />
-        <Row label="Gap" value={$(gaps.indumentaria_gap)} highlight />
+        <Row label="Indumentaria declarada" value={$(gaps.indumentaria_declarada)} />
+        <Row label="Aplicada en recibo" value={$(gaps.indumentaria_aplicada)} />
+        <Row label="Gap indumentaria" value={$(gaps.indumentaria_gap)} highlight />
         <div className="divider" />
-        <Row label="Cuota médica Ene–Mar declarada" value={$(F572.cuota_medica.enero + F572.cuota_medica.febrero + F572.cuota_medica.marzo)} />
-        <Row label="Aplicada en recibo" value={$(RECIBO_MAR.cuota_medica_aplicada)} />
-        <Row label="Gap" value={$(gaps.cuota_medica_gap)} highlight />
+        <Row label="Cuota médica declarada" value={$(gaps.cuota_medica_declarada)} />
+        <Row label="Aplicada en recibo" value={$(gaps.cuota_medica_aplicada)} />
+        <Row label="Gap cuota médica" value={$(gaps.cuota_medica_gap)} highlight />
         <div className="divider" />
-        <Row label={`Total gap × ${pct(gaps.tax_rate)}`} value={`${$(gaps.total_gap)} → ahorra ${$(gaps.ahorro_estimado)}`} highlight />
+        <Row
+          label={`Total gap × ${pct(gaps.tax_rate)}`}
+          value={`${$(gaps.total_gap)} → ahorra ${$(gaps.ahorro_estimado)}`}
+          highlight
+        />
       </Card>
 
-      <Card title="📅 Proyección Abril">
-        <Row label="Gap Ene–Mar (rectificativa)" value={$(gaps.total_gap)} />
-        <Row label="Indumentaria Abril nueva" value={$(abril.nueva_indumentaria_abr)} />
-        <Row label="Cuota médica Abril nueva" value={$(abril.nueva_cuota_medica_abr)} />
+      <Card title="📅 Proyección próximo mes">
+        <Row label="Gap retroactivo (rectificativa)" value={$(abril.nuevas_deducciones_ene_mar)} />
+        <Row label="Indumentaria mes siguiente" value={$(abril.nueva_indumentaria_abr)} />
+        <Row label="Cuota médica mes siguiente" value={$(abril.nueva_cuota_medica_abr)} />
         <Row label="Total nuevas deducciones" value={$(abril.total_nuevas_deducciones)} highlight />
         <div className="divider" />
-        <Row label="Reducción retención" value={$(abril.reduccion_retencion_estimada)} />
-        <Row label="Retención Abril estimada" value={$(abril.retencion_abr_estimada)} highlight />
+        <Row label="Reducción retención estimada" value={$(abril.reduccion_retencion_estimada)} />
+        <Row label="Retención próximo mes estimada" value={$(abril.retencion_abr_estimada)} highlight />
       </Card>
 
       <Card title="📊 Proyección Anual">
         <Row label="Bruto anual estimado" value={$(anual.bruto_anual)} />
-        <Row label="Retenido Ene–Mar (real)" value={$(anual.retencion_acumulada_mar)} />
+        <Row label="Retenido hasta ahora (real)" value={$(anual.retencion_acumulada_mar)} />
         <Row label="Retención restante estimada" value={$(anual.retencion_restante_estimada)} />
         <Row label="Total anual estimado" value={$(anual.retencion_total_anual)} highlight />
         <Row label="Tasa efectiva" value={pct(anual.efectiva_rate)} />
@@ -80,99 +88,140 @@ function TabResumen() {
   );
 }
 
-function TabMarzo() {
+function TabRecibo({ payslip }: { payslip: PayslipData }) {
+  return (
+    <Card title={`📊 Cálculo acumulado — ${payslip.periodo ?? "período actual"}`}>
+      <Row label="Total remuneraciones gravadas" value={$(payslip.bruto_acumulado)} />
+      <Row label="Aportes de ley" value={`–${$(payslip.aportes_acumulados)}`} />
+      <Row label="Indumentaria aplicada" value={`–${$(payslip.indumentaria_aplicada)}`} />
+      <Row label="Cuota médica aplicada" value={`–${$(payslip.cuota_medica_aplicada)}`} />
+      <div className="divider" />
+      <Row label="Deducción especial" value={`–${$(payslip.ded_especial)}`} />
+      <Row label="GNI" value={`–${$(payslip.gni)}`} />
+      <Row label="Cónyuge" value={`–${$(payslip.ded_conyuge)}`} />
+      <Row label="Hijos" value={`–${$(payslip.ded_hijos)}`} />
+      <Row label="1/12 ded. personales" value={`–${$(payslip.ded_especial_12)}`} />
+      <div className="divider" />
+      <Row label="GNSI declarado en recibo" value={$(payslip.gnsi)} highlight />
+      <Row label="Impuesto determinado" value={$(payslip.impuesto_determinado)} highlight />
+      <Row label="Retención acumulada anterior" value={$(payslip.retencion_acumulada - payslip.retencion_mes)} />
+      <Row label="Retenido este mes" value={$(payslip.retencion_mes)} highlight />
+    </Card>
+  );
+}
+
+function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
+  const mesNames = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+  ];
+  const cuotaTotal = mesNames.reduce((s, m) => s + ((f572.cuota_medica as Record<string, number>)[m] ?? 0), 0);
+  const indTotal   = mesNames.reduce((s, m) => s + ((f572.indumentaria as Record<string, number>)[m] ?? 0), 0);
+
   return (
     <>
-      <Card title="💰 Recibo Marzo 2026">
-        <Row label="Sueldo básico (26 días)" value={$(7_118_911.33)} />
-        <Row label="Lic. Vacaciones (4 días)" value={$(1_314_260.55)} />
-        <Row label="Reembolso home office" value={$(2_000)} />
-        <div className="divider" />
-        <Row label="Total bruto" value={$(8_433_172.29)} highlight />
-        <Row label="Aportes jubilación / OS" value={$(687_750.37)} />
-        <Row label="Ganancias retenidas" value={$(RECIBO_MAR.retencion_mes)} />
-        <div className="divider" />
-        <Row label="Neto acreditado" value={$(RECIBO_MAR.neto_mes ?? 0)} highlight />
+      <Card title="👨‍👩‍👧 Cargas de familia">
+        <Row label="Cónyuge" value={f572.conyuge ? "Declarado ✓" : "No declarado"} />
+        <Row label="Hijos" value={String(f572.hijos)} />
       </Card>
 
-      <Card title="📊 Cálculo acumulado Ene–Mar">
-        <Row label="Total remuneraciones gravadas" value={$(RECIBO_MAR.bruto_acumulado)} />
-        <Row label="Aportes de ley" value={`–${$(RECIBO_MAR.aportes_acumulados)}`} />
-        <Row label="Indumentaria aplicada" value={`–${$(RECIBO_MAR.indumentaria_aplicada)}`} />
-        <Row label="Cuota médica aplicada" value={`–${$(RECIBO_MAR.cuota_medica_aplicada)}`} />
+      <Card title="🏥 Cuotas Médico Asistenciales">
+        {mesNames.map(mes => {
+          const v = (f572.cuota_medica as Record<string, number>)[mes] ?? 0;
+          return v > 0 ? <Row key={mes} label={mes.charAt(0).toUpperCase() + mes.slice(1)} value={$(v)} /> : null;
+        })}
         <div className="divider" />
-        <Row label="Deducción especial" value={`–${$(RECIBO_MAR.ded_especial)}`} />
-        <Row label="GNI" value={`–${$(RECIBO_MAR.gni)}`} />
-        <Row label="Cónyuge" value={`–${$(RECIBO_MAR.ded_conyuge)}`} />
-        <Row label="Hijos (1)" value={`–${$(RECIBO_MAR.ded_hijos)}`} />
+        <Row label="Total declarado" value={$(cuotaTotal)} highlight />
+        <Row label="Aplicado en recibo" value={$(payslip.cuota_medica_aplicada)} />
+        <Row label="Gap" value={$(Math.max(0, cuotaTotal - payslip.cuota_medica_aplicada))} highlight />
+      </Card>
+
+      <Card title="👔 Indumentaria y Equipamiento">
+        {mesNames.map(mes => {
+          const v = (f572.indumentaria as Record<string, number>)[mes] ?? 0;
+          return v > 0 ? <Row key={mes} label={mes.charAt(0).toUpperCase() + mes.slice(1)} value={$(v)} /> : null;
+        })}
         <div className="divider" />
-        <Row label="GNSI" value={$(RECIBO_MAR.gnsi)} highlight />
-        <Row label="Tramo 31% (base $10.1M)" value="31%" />
-        <Row label="Impuesto determinado" value={$(RECIBO_MAR.impuesto_determinado)} highlight />
-        <Row label="Retenido Ene–Feb" value={$(RECIBO_MAR.retencion_acumulada - RECIBO_MAR.retencion_mes)} />
-        <Row label="Retenido en Marzo" value={$(RECIBO_MAR.retencion_mes)} highlight />
+        <Row label="Total declarado" value={$(indTotal)} highlight />
+        <Row label="Aplicado en recibo" value={$(payslip.indumentaria_aplicada)} />
+        <Row label="Gap" value={$(Math.max(0, indTotal - payslip.indumentaria_aplicada))} highlight />
       </Card>
     </>
   );
 }
 
-function TabF572() {
-  const ind_pendiente =
-    (F572.indumentaria.enero - RECIBO_MAR.indumentaria_aplicada) +
-    F572.indumentaria.febrero + F572.indumentaria.marzo + F572.indumentaria.abril;
-  const med_pendiente =
-    F572.cuota_medica.febrero + F572.cuota_medica.marzo + F572.cuota_medica.abril;
+function TabDatos({
+  payslip, f572,
+  onPayslipChange, onF572Change,
+}: {
+  payslip: PayslipData | null;
+  f572: F572Data | null;
+  onPayslipChange: (d: PayslipData) => void;
+  onF572Change: (d: F572Data) => void;
+}) {
+  const [section, setSection] = useState<"recibo" | "f572">("recibo");
 
   return (
     <>
-      <Card title="👨‍👩‍👧 Cargas de familia">
-        <Row label="Cónyuge" value="BENITEZ, PERLA NOEMI · 100%" />
-        <Row label="Hija" value="ALBERTENGO, ANYA · 100%" />
-        <Row label="Otros empleadores" value="Ninguno" />
-      </Card>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button
+          onClick={() => setSection("recibo")}
+          style={{
+            flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer",
+            background: section === "recibo" ? "#2563eb" : "#e5e7eb",
+            color: section === "recibo" ? "#fff" : "#374151", fontSize: 13, fontWeight: 600,
+          }}
+        >
+          Recibo de sueldo
+        </button>
+        <button
+          onClick={() => setSection("f572")}
+          style={{
+            flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer",
+            background: section === "f572" ? "#2563eb" : "#e5e7eb",
+            color: section === "f572" ? "#fff" : "#374151", fontSize: 13, fontWeight: 600,
+          }}
+        >
+          F.572
+        </button>
+      </div>
 
-      <Card title="🏥 Cuotas Médico Asistenciales">
-        <Row label="Enero" value={$(F572.cuota_medica.enero)} />
-        <Row label="Febrero" value={$(F572.cuota_medica.febrero)} />
-        <Row label="Marzo" value={$(F572.cuota_medica.marzo)} />
-        <Row label="Abril" value={$(F572.cuota_medica.abril)} />
-        <div className="divider" />
-        <Row label="Total declarado" value={$(F572.cuota_medica.total)} highlight />
-        <Row label="Aplicado en recibo" value={$(RECIBO_MAR.cuota_medica_aplicada)} />
-        <Row label="Pendiente de aplicar" value={$(med_pendiente)} highlight />
-      </Card>
-
-      <Card title="👔 Indumentaria y Equipamiento">
-        <Row label="Enero" value={$(F572.indumentaria.enero)} />
-        <Row label="Febrero" value={$(F572.indumentaria.febrero)} />
-        <Row label="Marzo" value={$(F572.indumentaria.marzo)} />
-        <Row label="Abril" value={$(F572.indumentaria.abril)} />
-        <div className="divider" />
-        <Row label="Total declarado" value={$(F572.indumentaria.total)} highlight />
-        <Row label="Aplicado en recibo" value={$(RECIBO_MAR.indumentaria_aplicada)} />
-        <Row label="Pendiente de aplicar" value={$(ind_pendiente)} highlight />
-      </Card>
-
-      <div className="note">Rectificativa presentada 13/04/2026 · SiRADIG ARCA</div>
+      {section === "recibo" && (
+        <PayslipForm
+          initial={payslip ?? undefined}
+          onSubmit={onPayslipChange}
+        />
+      )}
+      {section === "f572" && (
+        <F572Form
+          initial={f572 ?? undefined}
+          onSubmit={onF572Change}
+        />
+      )}
     </>
   );
 }
 
 const TABS = [
   { id: "resumen", label: "Resumen" },
-  { id: "marzo", label: "Recibo" },
+  { id: "recibo", label: "Recibo" },
   { id: "f572", label: "F.572" },
+  { id: "datos", label: "✏️ Datos" },
 ];
 
 export default function App() {
   const [tab, setTab] = useState("resumen");
+  const [payslip, setPayslip] = useState<PayslipData | null>(RECIBO_MAR);
+  const [f572, setF572] = useState<F572Data | null>(F572_DEFAULT);
+
+  const hasData = payslip !== null && f572 !== null;
 
   return (
     <div className="app">
       <div className="container">
         <div className="header">
           <h1>RetenciónClara</h1>
-          <p>Albertengo · WORMHOLE S.A. · 2026</p>
+          <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
         </div>
 
         <div className="tabs">
@@ -187,9 +236,31 @@ export default function App() {
           ))}
         </div>
 
-        {tab === "resumen" && <TabResumen />}
-        {tab === "marzo" && <TabMarzo />}
-        {tab === "f572" && <TabF572 />}
+        {tab === "resumen" && (
+          hasData
+            ? <TabResumen payslip={payslip} f572={f572} />
+            : <div className="note" style={{ marginTop: 32 }}>
+                Ingresá tus datos en la pestaña ✏️ Datos para ver el resumen.
+              </div>
+        )}
+        {tab === "recibo" && (
+          payslip
+            ? <TabRecibo payslip={payslip} />
+            : <div className="note" style={{ marginTop: 32 }}>Sin datos de recibo todavía.</div>
+        )}
+        {tab === "f572" && (
+          hasData
+            ? <TabF572 f572={f572} payslip={payslip} />
+            : <div className="note" style={{ marginTop: 32 }}>Sin datos de F.572 todavía.</div>
+        )}
+        {tab === "datos" && (
+          <TabDatos
+            payslip={payslip}
+            f572={f572}
+            onPayslipChange={p => { setPayslip(p); setTab("resumen"); }}
+            onF572Change={f => { setF572(f); setTab("resumen"); }}
+          />
+        )}
       </div>
     </div>
   );

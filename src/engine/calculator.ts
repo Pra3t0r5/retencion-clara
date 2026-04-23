@@ -1,6 +1,23 @@
 import { TABLAS_2026_H1, type TaxBracket } from '../tablas/2026-H1';
 import type { PayslipData, F572Data, GapAnalysis } from './schemas';
 
+export type ProyeccionAbril = {
+  nuevas_deducciones_ene_mar: number;
+  nueva_indumentaria_abr: number;
+  nueva_cuota_medica_abr: number;
+  total_nuevas_deducciones: number;
+  reduccion_retencion_estimada: number;
+  retencion_abr_estimada: number;
+};
+
+export type ProyeccionAnual = {
+  bruto_anual: number;
+  retencion_acumulada_mar: number;
+  retencion_restante_estimada: number;
+  retencion_total_anual: number;
+  efectiva_rate: number;
+};
+
 export type { GapAnalysis };
 
 export function buscarTramo(gnsi: number): TaxBracket {
@@ -70,5 +87,46 @@ export function calcularGap(
     total_gap,
     tax_rate,
     ahorro_estimado,
+  };
+}
+
+export function proyectarAbril(
+  payslip: PayslipData,
+  f572: F572Data,
+): ProyeccionAbril {
+  const gap = calcularGap(payslip, f572, payslip.meses);
+  const gnsi = calcularGNSI(payslip);
+  const tax_rate = buscarTramo(gnsi).pct;
+
+  const nueva_indumentaria_abr = f572.indumentaria['abril'] ?? 0;
+  const nueva_cuota_medica_abr = f572.cuota_medica['abril'] ?? 0;
+  const total_nuevas_deducciones = gap.total_gap + nueva_indumentaria_abr + nueva_cuota_medica_abr;
+  const reduccion_retencion_estimada = total_nuevas_deducciones * tax_rate;
+  const retencion_abr_estimada = Math.max(0, payslip.retencion_mes - reduccion_retencion_estimada);
+
+  return {
+    nuevas_deducciones_ene_mar: gap.total_gap,
+    nueva_indumentaria_abr,
+    nueva_cuota_medica_abr,
+    total_nuevas_deducciones,
+    reduccion_retencion_estimada,
+    retencion_abr_estimada,
+  };
+}
+
+export function proyectarAnual(payslip: PayslipData, f572: F572Data): ProyeccionAnual {
+  const bruto_mensual = payslip.bruto_acumulado / payslip.meses;
+  const bruto_anual = bruto_mensual * 12;
+  const abril = proyectarAbril(payslip, f572);
+  const retencion_may_dic_estimada = payslip.retencion_mes * 0.7 * 8;
+  const retencion_restante_estimada = abril.retencion_abr_estimada + retencion_may_dic_estimada;
+  const retencion_total_anual = payslip.retencion_acumulada + retencion_restante_estimada;
+
+  return {
+    bruto_anual,
+    retencion_acumulada_mar: payslip.retencion_acumulada,
+    retencion_restante_estimada,
+    retencion_total_anual,
+    efectiva_rate: retencion_total_anual / bruto_anual,
   };
 }
