@@ -16,6 +16,7 @@ import "./index.css";
 
 const YEAR = 2026;
 const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const EMPTY_F572: F572Data = { conyuge: false, hijos: 0, cuota_medica: {}, indumentaria: {} };
 const adapter = new LocalStorageAdapter();
 
 const $ = (n: number) =>
@@ -26,6 +27,19 @@ const $ = (n: number) =>
   }).format(n);
 
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
 
 const Row = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
   <div className={`row${highlight ? " highlight" : ""}`}>
@@ -40,6 +54,29 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
     {children}
   </div>
 );
+
+function EmptyState({
+  icon, title, desc, actionLabel, onAction,
+}: {
+  icon: string;
+  title: string;
+  desc: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon">{icon}</div>
+      <div className="empty-state-title">{title}</div>
+      <p className="empty-state-desc">{desc}</p>
+      {actionLabel && onAction && (
+        <button className="empty-state-action" onClick={onAction}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function TabResumen({
   payslip, f572, chartData,
@@ -114,13 +151,33 @@ function TabResumen({
   );
 }
 
-function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
+function TabF572({
+  f572, payslip, onGoToDatos,
+}: {
+  f572: F572Data;
+  payslip: PayslipData;
+  onGoToDatos: () => void;
+}) {
   const mesNames = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio",
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
   ];
   const cuotaTotal = mesNames.reduce((s, m) => s + ((f572.cuota_medica as Record<string, number>)[m] ?? 0), 0);
   const indTotal   = mesNames.reduce((s, m) => s + ((f572.indumentaria as Record<string, number>)[m] ?? 0), 0);
+
+  const hasF572Data = cuotaTotal > 0 || indTotal > 0 || f572.conyuge || f572.hijos > 0;
+
+  if (!hasF572Data) {
+    return (
+      <EmptyState
+        icon="📄"
+        title="Sin declaración F.572"
+        desc="No encontramos deducciones cargadas. Ingresá tu F.572 SiRADIG para calcular cuánto podés recuperar en deducciones de cuota médica e indumentaria."
+        actionLabel="Ingresar F.572"
+        onAction={onGoToDatos}
+      />
+    );
+  }
 
   return (
     <>
@@ -154,9 +211,8 @@ function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
   );
 }
 
-function TabDatos({
-  payslip, f572,
-  onPayslipChange, onF572Change,
+function UploadForms({
+  payslip, f572, onPayslipChange, onF572Change,
 }: {
   payslip: PayslipData | null;
   f572: F572Data | null;
@@ -164,6 +220,7 @@ function TabDatos({
   onF572Change: (d: F572Data) => void;
 }) {
   const [section, setSection] = useState<"recibo" | "f572">("recibo");
+  const [showManual, setShowManual] = useState(false);
   const [reciboLowConf, setReciboLowConf] = useState<string[]>([]);
   const [f572LowConf, setF572LowConf] = useState<string[]>([]);
 
@@ -174,7 +231,7 @@ function TabDatos({
     try {
       const parsed = PayslipSchema.parse({ ...result, gnsi: result.gnsi ?? 0, impuesto_determinado: result.impuesto_determinado ?? 0 });
       onPayslipChange(parsed);
-    } catch { /* low-confidence extraction — user reviews form */ }
+    } catch { /* low-confidence — user reviews form */ }
     return result;
   }
 
@@ -189,10 +246,6 @@ function TabDatos({
     return result;
   }
 
-  const btnActive = { background: "#2563eb", color: "#fff" };
-  const btnIdle = { background: "#e5e7eb", color: "#374151" };
-  const btnBase: React.CSSProperties = { flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 };
-
   return (
     <>
       <PDFDropzone
@@ -206,36 +259,53 @@ function TabDatos({
         lowConfidenceFields={f572LowConf}
       />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setSection("recibo")} style={{ ...btnBase, ...(section === "recibo" ? btnActive : btnIdle) }}>
-          Recibo de sueldo
-        </button>
-        <button onClick={() => setSection("f572")} style={{ ...btnBase, ...(section === "f572" ? btnActive : btnIdle) }}>
-          F.572
+      <div className="manual-toggle-row">
+        <button className="demo-link" onClick={() => setShowManual(v => !v)}>
+          {showManual ? "Ocultar carga manual ↑" : "Cargar datos manualmente ↓"}
         </button>
       </div>
 
-      {section === "recibo" && (
-        <PayslipForm initial={payslip ?? undefined} onSubmit={onPayslipChange} />
-      )}
-      {section === "f572" && (
-        <F572Form initial={f572 ?? undefined} onSubmit={onF572Change} />
+      {showManual && (
+        <>
+          <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+            <button
+              onClick={() => setSection("recibo")}
+              className={`btn-section ${section === "recibo" ? "active" : "idle"}`}
+            >
+              Recibo de sueldo
+            </button>
+            <button
+              onClick={() => setSection("f572")}
+              className={`btn-section ${section === "f572" ? "active" : "idle"}`}
+            >
+              F.572
+            </button>
+          </div>
+
+          {section === "recibo" && (
+            <PayslipForm initial={payslip ?? undefined} onSubmit={onPayslipChange} />
+          )}
+          {section === "f572" && (
+            <F572Form initial={f572 ?? undefined} onSubmit={onF572Change} />
+          )}
+        </>
       )}
     </>
   );
 }
 
 const TABS = [
-  { id: "resumen", label: "Resumen" },
-  { id: "f572", label: "F.572" },
-  { id: "datos", label: "✏️ Datos" },
+  { id: "resumen", label: "Resumen", className: "tab--resumen" },
+  { id: "f572",    label: "F.572",   className: "" },
+  { id: "datos",   label: "✏️ Datos", className: "" },
 ];
 
 export default function App() {
   const [tab, setTab] = useState("resumen");
   const [fiscalYear, setFiscalYear] = useState<FiscalYearData>(new Map());
   const [activeMonth, setActiveMonth] = useState<number | null>(null);
-  const [f572, setF572] = useState<F572Data | null>(F572_DEFAULT);
+  const [f572, setF572] = useState<F572Data | null>(null);
+  const isDesktop = useIsDesktop();
 
   useEffect(() => {
     adapter.loadYear(YEAR).then(stored => {
@@ -243,15 +313,12 @@ export default function App() {
         setFiscalYear(stored);
         const months = [...stored.keys()].sort((a, b) => a - b);
         setActiveMonth(months[months.length - 1]);
-      } else {
-        setFiscalYear(new Map([[3, RECIBO_MAR]]));
-        setActiveMonth(3);
       }
     });
   }, []);
 
   const activePayslip = activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null;
-  const hasData = activePayslip !== null && f572 !== null;
+  const activeF572 = f572 ?? EMPTY_F572;
 
   const chartData: ChartPoint[] = Array.from(fiscalYear.entries())
     .sort(([a], [b]) => a - b)
@@ -266,8 +333,20 @@ export default function App() {
     newMap.set(p.meses, p);
     setFiscalYear(newMap);
     setActiveMonth(p.meses);
-    setTab("resumen");
     adapter.saveMonth(YEAR, p.meses, p);
+    if (!isDesktop) setTab("resumen");
+  }
+
+  function handleF572Change(f: F572Data) {
+    setF572(f);
+    if (!isDesktop) setTab("resumen");
+  }
+
+  function handleLoadDemo() {
+    setFiscalYear(new Map([[3, RECIBO_MAR]]));
+    setActiveMonth(3);
+    setF572(F572_DEFAULT);
+    if (!isDesktop) setTab("resumen");
   }
 
   function handleClearMonth() {
@@ -278,82 +357,146 @@ export default function App() {
     adapter.deleteMonth(YEAR, activeMonth);
     if (newMap.size === 0) {
       setActiveMonth(null);
-      setTab("datos");
     } else {
       const remaining = [...newMap.keys()].sort((a, b) => a - b);
       setActiveMonth(remaining[remaining.length - 1]);
     }
   }
 
-  const monthList = [...fiscalYear.keys()];
+  // ── Welcome screen (no payslips loaded) ──────────────────────
+  if (fiscalYear.size === 0) {
+    return (
+      <div className="app">
+        <div className="welcome-layout">
+          <div className="welcome-left">
+            <div className="welcome-app-name">RetenciónClara</div>
+            <div className="welcome-hero">
+              <div className="welcome-hero-icon">🧾</div>
+              <h2 className="welcome-hero-title">Calculá tu retención de ganancias</h2>
+              <p className="welcome-hero-desc">
+                Subí tu recibo de sueldo y el F.572 SiRADIG para ver cuánto te retienen,
+                cuánto podés recuperar con deducciones pendientes y proyectar los meses que vienen.
+              </p>
+              <div className="welcome-steps">
+                <div className="welcome-step">
+                  <div className="welcome-step-num">1</div>
+                  <div className="welcome-step-text">Subí o cargá tu recibo de sueldo</div>
+                </div>
+                <div className="welcome-step">
+                  <div className="welcome-step-num">2</div>
+                  <div className="welcome-step-text">Completá tu declaración F.572</div>
+                </div>
+                <div className="welcome-step">
+                  <div className="welcome-step-num">3</div>
+                  <div className="welcome-step-text">Analizá el gap y la proyección</div>
+                </div>
+              </div>
+              <button className="demo-link" onClick={handleLoadDemo}>
+                Probar con datos de ejemplo →
+              </button>
+            </div>
+          </div>
+          <div className="welcome-right">
+            <UploadForms
+              payslip={null}
+              f572={null}
+              onPayslipChange={handlePayslipChange}
+              onF572Change={handleF572Change}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Normal layout (has data) ──────────────────────────────────
+  const header = (
+    <div className="header">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1>RetenciónClara</h1>
+          <p>{activePayslip?.empleador ?? "Sin empleador"} · {activePayslip?.periodo ?? String(YEAR)}</p>
+        </div>
+        {activeMonth !== null && (
+          <button className="btn-clear" onClick={handleClearMonth}>
+            Limpiar mes
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const tabs = (
+    <div className="tabs">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          className={`tab${tab === t.id ? " active" : ""}${t.className ? ` ${t.className}` : ""}`}
+          onClick={() => setTab(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const leftContent = (
+    <>
+      {tab === "resumen" && (
+        activePayslip
+          ? <TabResumen payslip={activePayslip} f572={activeF572} chartData={chartData} />
+          : <EmptyState
+              icon="📅"
+              title="Ningún mes seleccionado"
+              desc="Seleccioná un mes del navegador o cargá un nuevo recibo."
+              actionLabel="Agregar mes"
+              onAction={() => setTab("datos")}
+            />
+      )}
+      {tab === "f572" && (
+        activePayslip
+          ? <TabF572 f572={activeF572} payslip={activePayslip} onGoToDatos={() => setTab("datos")} />
+          : <EmptyState
+              icon="📄"
+              title="Ningún mes seleccionado"
+              desc="Seleccioná un mes para ver el análisis F.572."
+            />
+      )}
+      {tab === "datos" && (
+        <UploadForms
+          payslip={activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null}
+          f572={f572}
+          onPayslipChange={handlePayslipChange}
+          onF572Change={handleF572Change}
+        />
+      )}
+    </>
+  );
 
   return (
     <div className="app">
-      <div className="container">
-        <div className="header">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <h1>RetenciónClara</h1>
-              <p>{activePayslip?.empleador ?? "Ingresá tus datos"} · {activePayslip?.periodo ?? String(YEAR)}</p>
-            </div>
-            {hasData && (
-              <button
-                onClick={handleClearMonth}
-                style={{
-                  marginTop: 4, padding: "4px 10px", fontSize: 12,
-                  background: "transparent", border: "1px solid #d1d5db",
-                  borderRadius: 6, cursor: "pointer", color: "#6b7280",
-                }}
-              >
-                Limpiar mes
-              </button>
-            )}
-          </div>
-        </div>
-
-        {monthList.length > 0 && (
+      <div className="app-grid">
+        <div className="panel-left">
+          {header}
           <MonthNav
-            months={monthList}
+            months={[...fiscalYear.keys()]}
             active={activeMonth}
             onSelect={setActiveMonth}
             onAddMonth={() => { setActiveMonth(null); setTab("datos"); }}
           />
-        )}
-
-        <div className="tabs">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`tab${tab === t.id ? " active" : ""}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
+          {tabs}
+          {leftContent}
         </div>
-
-        {tab === "resumen" && (
-          hasData
-            ? <TabResumen payslip={activePayslip} f572={f572} chartData={chartData} />
-            : <div className="note" style={{ marginTop: 32 }}>
-                {fiscalYear.size === 0
-                  ? "Cargá tu primer recibo para ver la progresión mensual."
-                  : "Seleccioná un mes o cargá un nuevo recibo."}
-              </div>
-        )}
-        {tab === "f572" && (
-          hasData
-            ? <TabF572 f572={f572} payslip={activePayslip} />
-            : <div className="note" style={{ marginTop: 32 }}>Sin datos de F.572 todavía.</div>
-        )}
-        {tab === "datos" && (
-          <TabDatos
-            payslip={activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null}
-            f572={f572}
-            onPayslipChange={handlePayslipChange}
-            onF572Change={f => { setF572(f); setTab("resumen"); }}
-          />
-        )}
+        <div className="panel-right">
+          {activePayslip
+            ? <TabResumen payslip={activePayslip} f572={activeF572} chartData={chartData} />
+            : <EmptyState
+                icon="📅"
+                title="Ningún mes seleccionado"
+                desc="Seleccioná un mes del navegador o cargá un nuevo recibo."
+              />
+          }
+        </div>
       </div>
     </div>
   );

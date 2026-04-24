@@ -5,13 +5,13 @@ const $ = (n: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 
 const Row = ({ label, value, indent }: { label: string; value: string; indent?: boolean }) => (
-  <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", paddingLeft: indent ? 12 : 0, borderBottom: "1px solid #f3f4f6", fontSize: 13 }}>
-    <span style={{ color: "#6b7280" }}>{label}</span>
-    <span style={{ fontWeight: 500, color: "#111827" }}>{value}</span>
+  <div className={`detalle-row${indent ? " indent" : ""}`}>
+    <span className="detalle-row-label">{label}</span>
+    <span className="detalle-row-value">{value}</span>
   </div>
 );
 
-const Divider = () => <div style={{ borderTop: "1px solid #e5e7eb", margin: "6px 0" }} />;
+const Divider = () => <div className="detalle-divider" />;
 
 type Props = { payslip: PayslipData; defaultOpen?: boolean };
 
@@ -22,18 +22,13 @@ export function DetalleCalculo({ payslip, defaultOpen = false }: Props) {
   const pct = `${(tramo.pct * 100).toFixed(0)}%`;
 
   return (
-    <details open={defaultOpen} style={{ marginTop: 16 }}>
-      <summary style={{
-        cursor: "pointer", padding: "10px 14px",
-        background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb",
-        fontSize: 13, fontWeight: 600, color: "#374151", listStyle: "none",
-        display: "flex", justifyContent: "space-between",
-      }}>
+    <details open={defaultOpen}>
+      <summary className="detalle-summary">
         <span>📋 Detalle del cálculo</span>
-        <span style={{ color: "#9ca3af", fontWeight: 400 }}>▼</span>
+        <span className="detalle-summary-chevron">▼</span>
       </summary>
 
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderTop: "none", borderRadius: "0 0 8px 8px", padding: "12px 14px" }}>
+      <div className="detalle-details">
         <Row label="Total remuneraciones gravadas" value={$(payslip.bruto_acumulado)} />
         <Row label="Aportes de ley" value={`–${$(payslip.aportes_acumulados)}`} indent />
         <Row label="Indumentaria aplicada" value={`–${$(payslip.indumentaria_aplicada)}`} indent />

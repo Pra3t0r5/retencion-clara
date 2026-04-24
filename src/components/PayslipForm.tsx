@@ -92,54 +92,23 @@ export function PayslipForm({ initial, onSubmit }: Props) {
     onSubmit(result);
   }
 
-  function handlePreFill() {
-    setRaw(payslipToRaw(RECIBO_MAR));
-    setErrors({});
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "8px 10px", fontSize: 14,
-    border: "1px solid #d1d5db", borderRadius: 6, boxSizing: "border-box",
-    fontFamily: "inherit",
-  };
-  const errorStyle: React.CSSProperties = { color: "#dc2626", fontSize: 12, marginTop: 2 };
-  const labelStyle: React.CSSProperties = { display: "block", fontSize: 13, fontWeight: 500, marginBottom: 4, color: "#374151" };
-
   return (
-    <form onSubmit={handleSubmit} style={{ padding: "0 0 16px" }}>
-      <button
-        type="button"
-        onClick={handlePreFill}
-        style={{
-          width: "100%", padding: "10px", marginBottom: 16,
-          background: "#eff6ff", border: "1px solid #bfdbfe",
-          borderRadius: 8, cursor: "pointer", fontSize: 14, color: "#1d4ed8",
-        }}
-      >
-        Usar datos de Fernando (demo)
-      </button>
+    <form onSubmit={handleSubmit} style={{ padding: "0 0 var(--space-4)" }}>
 
       {FIELDS.map(({ key, label }) => (
-        <div key={key} style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>{label}</label>
+        <div key={key} style={{ marginBottom: "var(--space-3)" }}>
+          <label className="form-label">{label}</label>
           <input
-            style={{ ...inputStyle, borderColor: errors[key] ? "#dc2626" : "#d1d5db" }}
+            className={`form-input${errors[key] ? " form-input--error" : ""}`}
             value={raw[key] ?? ""}
             onChange={e => handleChange(key, e.target.value)}
             placeholder={key === "periodo" ? "Marzo 2026" : "0"}
           />
-          {errors[key] && <div style={errorStyle}>{errors[key]}</div>}
+          {errors[key] && <div className="form-error">{errors[key]}</div>}
         </div>
       ))}
 
-      <button
-        type="submit"
-        style={{
-          width: "100%", padding: "12px", marginTop: 8,
-          background: "#2563eb", color: "#fff", border: "none",
-          borderRadius: 8, fontSize: 15, fontWeight: 600, cursor: "pointer",
-        }}
-      >
+      <button type="submit" className="form-submit-btn">
         Calcular
       </button>
     </form>
