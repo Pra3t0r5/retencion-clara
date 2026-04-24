@@ -71,7 +71,11 @@ export function PDFDropzone({ label, onExtract, lowConfidenceFields = [] }: Prop
         <div className="dropzone-hint">Arrastrá tu PDF aquí o hacé click</div>
       )}
       {status === "loading" && (
-        <div className="dropzone-processing">Procesando {filename}…</div>
+        <div className="dropzone-loading">
+          <div className="spinner" />
+          <div className="dropzone-loading-title">Procesando PDF</div>
+          <div className="dropzone-loading-desc">{filename}</div>
+        </div>
       )}
       {status === "done" && (
         <div className="dropzone-done">

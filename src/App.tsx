@@ -45,6 +45,29 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
   </div>
 );
 
+function EmptyState({
+  icon, title, desc, actionLabel, onAction,
+}: {
+  icon: string;
+  title: string;
+  desc: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon">{icon}</div>
+      <div className="empty-state-title">{title}</div>
+      <p className="empty-state-desc">{desc}</p>
+      {actionLabel && onAction && (
+        <button className="empty-state-action" onClick={onAction}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data }) {
   const gaps = calcularGap(payslip, f572, payslip.meses);
   const abril = proyectarAbril(payslip, f572);
@@ -106,14 +129,33 @@ function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data })
   );
 }
 
-
-function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
+function TabF572({
+  f572, payslip, onGoToDatos,
+}: {
+  f572: F572Data;
+  payslip: PayslipData;
+  onGoToDatos: () => void;
+}) {
   const mesNames = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio",
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
   ];
   const cuotaTotal = mesNames.reduce((s, m) => s + ((f572.cuota_medica as Record<string, number>)[m] ?? 0), 0);
   const indTotal   = mesNames.reduce((s, m) => s + ((f572.indumentaria as Record<string, number>)[m] ?? 0), 0);
+
+  const hasF572Data = cuotaTotal > 0 || indTotal > 0 || f572.conyuge || f572.hijos > 0;
+
+  if (!hasF572Data) {
+    return (
+      <EmptyState
+        icon="📄"
+        title="Sin declaración F.572"
+        desc="No encontramos deducciones cargadas. Ingresá tu F.572 SiRADIG para calcular cuánto podés recuperar en deducciones de cuota médica e indumentaria."
+        actionLabel="Ingresar F.572"
+        onAction={onGoToDatos}
+      />
+    );
+  }
 
   return (
     <>
@@ -147,9 +189,8 @@ function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
   );
 }
 
-function TabDatos({
-  payslip, f572,
-  onPayslipChange, onF572Change,
+function UploadForms({
+  payslip, f572, onPayslipChange, onF572Change,
 }: {
   payslip: PayslipData | null;
   f572: F572Data | null;
@@ -167,7 +208,7 @@ function TabDatos({
     try {
       const parsed = PayslipSchema.parse({ ...result, gnsi: result.gnsi ?? 0, impuesto_determinado: result.impuesto_determinado ?? 0 });
       onPayslipChange(parsed);
-    } catch { /* low-confidence extraction — user reviews form */ }
+    } catch { /* low-confidence — user reviews form */ }
     return result;
   }
 
@@ -232,28 +273,77 @@ export default function App() {
   const [f572, setF572] = useState<F572Data | null>(F572_DEFAULT);
   const isDesktop = useIsDesktop();
 
-  // On desktop, Resumen lives in the right panel — don't show it in the left panel
   useEffect(() => {
     if (isDesktop && tab === "resumen") setTab("datos");
   }, [isDesktop]);
 
   const hasData = payslip !== null && f572 !== null;
 
+  function handlePayslipChange(p: PayslipData) {
+    setPayslip(p);
+    if (!isDesktop) setTab("resumen");
+  }
+
+  function handleF572Change(f: F572Data) {
+    setF572(f);
+    if (!isDesktop) setTab("resumen");
+  }
+
+  // ── Welcome screen (no data) ────────────────────────────────
+  if (!hasData) {
+    return (
+      <div className="app">
+        <div className="welcome-layout">
+          <div className="welcome-app-name">RetenciónClara</div>
+
+          <div className="welcome-hero">
+            <div className="welcome-hero-icon">🧾</div>
+            <h2 className="welcome-hero-title">Calculá tu retención de ganancias</h2>
+            <p className="welcome-hero-desc">
+              Subí tu recibo de sueldo y el F.572 SiRADIG para ver cuánto te retienen,
+              cuánto podés recuperar con deducciones pendientes y proyectar los meses que vienen.
+            </p>
+            <div className="welcome-steps">
+              <div className="welcome-step">
+                <div className="welcome-step-num">1</div>
+                <div className="welcome-step-text">Subí o cargá tu recibo de sueldo</div>
+              </div>
+              <div className="welcome-step">
+                <div className="welcome-step-num">2</div>
+                <div className="welcome-step-text">Completá tu declaración F.572</div>
+              </div>
+              <div className="welcome-step">
+                <div className="welcome-step-num">3</div>
+                <div className="welcome-step-text">Analizá el gap y la proyección</div>
+              </div>
+            </div>
+          </div>
+
+          <UploadForms
+            payslip={payslip}
+            f572={f572}
+            onPayslipChange={handlePayslipChange}
+            onF572Change={handleF572Change}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Normal layout (has data) ────────────────────────────────
   const header = (
     <div className="header">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h1>RetenciónClara</h1>
-          <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
+          <p>{payslip.empleador ?? "Sin empleador"} · {payslip.periodo ?? "2026"}</p>
         </div>
-        {hasData && (
-          <button
-            className="btn-clear"
-            onClick={() => { setPayslip(null); setF572(null); setTab("datos"); }}
-          >
-            Limpiar
-          </button>
-        )}
+        <button
+          className="btn-clear"
+          onClick={() => { setPayslip(null); setF572(null); }}
+        >
+          Limpiar
+        </button>
       </div>
     </div>
   );
@@ -274,24 +364,20 @@ export default function App() {
 
   const leftContent = (
     <>
-      {tab === "resumen" && (
-        hasData
-          ? <TabResumen payslip={payslip} f572={f572} />
-          : <div className="note" style={{ marginTop: "var(--space-8)" }}>
-              Ingresá tus datos en la pestaña ✏️ Datos para ver el resumen.
-            </div>
-      )}
+      {tab === "resumen" && <TabResumen payslip={payslip} f572={f572} />}
       {tab === "f572" && (
-        hasData
-          ? <TabF572 f572={f572} payslip={payslip} />
-          : <div className="note" style={{ marginTop: "var(--space-8)" }}>Sin datos de F.572 todavía.</div>
+        <TabF572
+          f572={f572}
+          payslip={payslip}
+          onGoToDatos={() => setTab("datos")}
+        />
       )}
       {tab === "datos" && (
-        <TabDatos
+        <UploadForms
           payslip={payslip}
           f572={f572}
-          onPayslipChange={p => { setPayslip(p); if (!isDesktop) setTab("resumen"); }}
-          onF572Change={f => { setF572(f); if (!isDesktop) setTab("resumen"); }}
+          onPayslipChange={handlePayslipChange}
+          onF572Change={handleF572Change}
         />
       )}
     </>
@@ -300,21 +386,13 @@ export default function App() {
   return (
     <div className="app">
       <div className="app-grid">
-        {/* Left panel — inputs/tabs */}
         <div className="panel-left">
           {header}
           {tabs}
           {leftContent}
         </div>
-
-        {/* Right panel — always-visible Resumen on desktop */}
         <div className="panel-right">
-          {hasData
-            ? <TabResumen payslip={payslip!} f572={f572!} />
-            : <div className="note" style={{ marginTop: "var(--space-8)" }}>
-                Ingresá tus datos para ver el resumen.
-              </div>
-          }
+          <TabResumen payslip={payslip} f572={f572} />
         </div>
       </div>
     </div>
