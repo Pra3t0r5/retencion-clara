@@ -222,8 +222,24 @@ export default function App() {
     <div className="app">
       <div className="container">
         <div className="header">
-          <h1>RetenciónClara</h1>
-          <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <h1>RetenciónClara</h1>
+              <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
+            </div>
+            {hasData && (
+              <button
+                onClick={() => { setPayslip(null); setF572(null); setTab("datos"); }}
+                style={{
+                  marginTop: 4, padding: "4px 10px", fontSize: 12,
+                  background: "transparent", border: "1px solid #d1d5db",
+                  borderRadius: 6, cursor: "pointer", color: "#6b7280",
+                }}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="tabs">
