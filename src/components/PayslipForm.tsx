@@ -92,21 +92,8 @@ export function PayslipForm({ initial, onSubmit }: Props) {
     onSubmit(result);
   }
 
-  function handlePreFill() {
-    setRaw(payslipToRaw(RECIBO_MAR));
-    setErrors({});
-  }
-
   return (
     <form onSubmit={handleSubmit} style={{ padding: "0 0 var(--space-4)" }}>
-      <button
-        type="button"
-        onClick={handlePreFill}
-        className="form-toggle-btn"
-        style={{ width: "100%", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-4)" }}
-      >
-        Usar datos de Fernando (demo)
-      </button>
 
       {FIELDS.map(({ key, label }) => (
         <div key={key} style={{ marginBottom: "var(--space-3)" }}>

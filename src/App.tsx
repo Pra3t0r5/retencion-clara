@@ -269,8 +269,8 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState("datos");
-  const [payslip, setPayslip] = useState<PayslipData | null>(RECIBO_MAR);
-  const [f572, setF572] = useState<F572Data | null>(F572_DEFAULT);
+  const [payslip, setPayslip] = useState<PayslipData | null>(null);
+  const [f572, setF572] = useState<F572Data | null>(null);
   const isDesktop = useIsDesktop();
 
   useEffect(() => {
@@ -289,42 +289,54 @@ export default function App() {
     if (!isDesktop) setTab("resumen");
   }
 
+  function handleLoadDemo() {
+    setPayslip(RECIBO_MAR);
+    setF572(F572_DEFAULT);
+    if (!isDesktop) setTab("resumen");
+  }
+
   // ── Welcome screen (no data) ────────────────────────────────
   if (!hasData) {
     return (
       <div className="app">
         <div className="welcome-layout">
-          <div className="welcome-app-name">RetenciónClara</div>
-
-          <div className="welcome-hero">
-            <div className="welcome-hero-icon">🧾</div>
-            <h2 className="welcome-hero-title">Calculá tu retención de ganancias</h2>
-            <p className="welcome-hero-desc">
-              Subí tu recibo de sueldo y el F.572 SiRADIG para ver cuánto te retienen,
-              cuánto podés recuperar con deducciones pendientes y proyectar los meses que vienen.
-            </p>
-            <div className="welcome-steps">
-              <div className="welcome-step">
-                <div className="welcome-step-num">1</div>
-                <div className="welcome-step-text">Subí o cargá tu recibo de sueldo</div>
+          <div className="welcome-left">
+            <div className="welcome-app-name">RetenciónClara</div>
+            <div className="welcome-hero">
+              <div className="welcome-hero-icon">🧾</div>
+              <h2 className="welcome-hero-title">Calculá tu retención de ganancias</h2>
+              <p className="welcome-hero-desc">
+                Subí tu recibo de sueldo y el F.572 SiRADIG para ver cuánto te retienen,
+                cuánto podés recuperar con deducciones pendientes y proyectar los meses que vienen.
+              </p>
+              <div className="welcome-steps">
+                <div className="welcome-step">
+                  <div className="welcome-step-num">1</div>
+                  <div className="welcome-step-text">Subí o cargá tu recibo de sueldo</div>
+                </div>
+                <div className="welcome-step">
+                  <div className="welcome-step-num">2</div>
+                  <div className="welcome-step-text">Completá tu declaración F.572</div>
+                </div>
+                <div className="welcome-step">
+                  <div className="welcome-step-num">3</div>
+                  <div className="welcome-step-text">Analizá el gap y la proyección</div>
+                </div>
               </div>
-              <div className="welcome-step">
-                <div className="welcome-step-num">2</div>
-                <div className="welcome-step-text">Completá tu declaración F.572</div>
-              </div>
-              <div className="welcome-step">
-                <div className="welcome-step-num">3</div>
-                <div className="welcome-step-text">Analizá el gap y la proyección</div>
-              </div>
+              <button className="demo-link" onClick={handleLoadDemo}>
+                Probar con datos de ejemplo →
+              </button>
             </div>
           </div>
 
-          <UploadForms
-            payslip={payslip}
-            f572={f572}
-            onPayslipChange={handlePayslipChange}
-            onF572Change={handleF572Change}
-          />
+          <div className="welcome-right">
+            <UploadForms
+              payslip={payslip}
+              f572={f572}
+              onPayslipChange={handlePayslipChange}
+              onF572Change={handleF572Change}
+            />
+          </div>
         </div>
       </div>
     );

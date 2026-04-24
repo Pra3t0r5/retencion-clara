@@ -59,11 +59,6 @@ export function F572Form({ initial, onSubmit }: Props) {
   const cuotaTotal = MESES.reduce((s, m) => s + parseARS(cuota[m] ?? ""), 0);
   const indTotal   = MESES.reduce((s, m) => s + parseARS(ind[m] ?? ""), 0);
 
-  function handlePreFill() {
-    const d = f572ToRaw(F572);
-    setConyuge(d.conyuge); setHijos(d.hijos); setCuota(d.cuota); setInd(d.ind);
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onSubmit(rawToF572(conyuge, hijos, cuota, ind));
@@ -71,15 +66,6 @@ export function F572Form({ initial, onSubmit }: Props) {
 
   return (
     <form onSubmit={handleSubmit} style={{ padding: "0 0 var(--space-4)" }}>
-      <button
-        type="button"
-        onClick={handlePreFill}
-        className="form-toggle-btn"
-        style={{ width: "100%", padding: "var(--space-2) var(--space-3)", marginBottom: "var(--space-4)" }}
-      >
-        Usar datos de Fernando (demo)
-      </button>
-
       <div className="form-section-title">Cargas de familia</div>
       <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-2)", fontSize: "var(--text-base)" }}>
         <input type="checkbox" checked={conyuge} onChange={e => setConyuge(e.target.checked)} />

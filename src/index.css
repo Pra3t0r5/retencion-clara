@@ -202,10 +202,47 @@ body { margin: 0; }
 
 /* ── Welcome screen (no data) ────────────────────────────────── */
 
+/* Mobile: stacked */
 .welcome-layout {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-4) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.welcome-left {
+  padding: var(--space-8) var(--space-5) var(--space-6);
+}
+
+.welcome-right {
+  padding: 0 var(--space-5) var(--space-8);
+}
+
+/* Desktop: two columns, full viewport, no scroll */
+@media (min-width: 768px) {
+  .welcome-layout {
+    flex-direction: row;
+    overflow: hidden;
+  }
+
+  .welcome-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--space-10) var(--space-10) var(--space-10) var(--space-12);
+    border-right: 1px solid var(--color-border);
+    overflow: hidden;
+    height: 100dvh;
+  }
+
+  .welcome-right {
+    flex: 1;
+    padding: var(--space-8) var(--space-12) var(--space-8) var(--space-10);
+    overflow-y: auto;
+    height: 100dvh;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
 }
 
 .welcome-app-name {
@@ -217,9 +254,17 @@ body { margin: 0; }
   letter-spacing: .02em;
 }
 
+@media (min-width: 768px) {
+  .welcome-app-name { text-align: left; margin-bottom: var(--space-6); }
+}
+
 .welcome-hero {
   text-align: center;
-  padding: var(--space-4) 0 var(--space-6);
+  padding: var(--space-4) 0 var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .welcome-hero { text-align: left; padding: 0; }
 }
 
 .welcome-hero-icon {
@@ -236,20 +281,26 @@ body { margin: 0; }
   line-height: 1.25;
 }
 
+@media (min-width: 768px) {
+  .welcome-hero-title { font-size: var(--text-2xl); }
+}
+
 .welcome-hero-desc {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   line-height: 1.65;
-  margin: 0 0 var(--space-6);
   max-width: 360px;
-  margin-inline: auto;
-  margin-bottom: var(--space-6);
+  margin: 0 auto var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .welcome-hero-desc { margin: 0 0 var(--space-6); max-width: 420px; }
 }
 
 .welcome-steps {
   display: flex;
   gap: var(--space-3);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .welcome-step {
@@ -273,6 +324,20 @@ body { margin: 0; }
   color: var(--color-text-muted);
   line-height: 1.5;
 }
+
+.demo-link {
+  display: inline-block;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.demo-link:hover { color: var(--color-primary); }
 
 /* ── Empty states ────────────────────────────────────────────── */
 
