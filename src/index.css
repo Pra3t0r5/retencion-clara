@@ -143,12 +143,10 @@ body { margin: 0; }
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-2);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
+  padding: 7px 0;
   font-size: var(--text-sm);
+  /* No per-row borders — rows breathe via padding; .divider marks section breaks */
 }
-
-.row:last-child { border-bottom: none; }
 
 .row-label { color: var(--color-text-muted); flex-shrink: 0; }
 
@@ -157,10 +155,7 @@ body { margin: 0; }
 .row.highlight .row-label,
 .row.highlight .row-value { font-weight: var(--font-weight-semibold); color: var(--color-primary); }
 
-/* Remove row border when a divider immediately follows — prevents double line */
-.row:has(+ .divider) { border-bottom: none; }
-
-.divider { height: 1px; background: var(--color-border); margin: var(--space-2) 0; }
+.divider { height: 1px; background: var(--color-border); margin: var(--space-1) 0; }
 
 /* ── Stat Cards ──────────────────────────────────────────────── */
 
