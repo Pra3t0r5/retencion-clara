@@ -40,23 +40,14 @@ export function PDFDropzone({ label, onExtract, lowConfidenceFields = [] }: Prop
     if (file) process(file);
   }
 
-  const borderColor = status === "done" ? "#16a34a"
-    : status === "error" ? "#dc2626"
-    : dragging ? "#2563eb"
-    : "#d1d5db";
-
-  const bg = status === "done" ? "#f0fdf4"
-    : status === "error" ? "#fef2f2"
-    : dragging ? "#eff6ff"
-    : "#f9fafb";
+  const stateClass = status === "done" ? "dropzone--done"
+    : status === "error" ? "dropzone--error"
+    : dragging ? "dropzone--dragging"
+    : "";
 
   return (
     <div
-      style={{
-        border: `2px dashed ${borderColor}`, borderRadius: 8,
-        padding: "16px 12px", background: bg, cursor: "pointer",
-        transition: "all 0.15s", marginBottom: 12,
-      }}
+      className={`dropzone ${stateClass}`}
       onClick={() => inputRef.current?.click()}
       onDragOver={e => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
@@ -74,32 +65,26 @@ export function PDFDropzone({ label, onExtract, lowConfidenceFields = [] }: Prop
         onChange={e => handleFile(e.target.files?.[0])}
       />
 
-      <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: 4 }}>
-        {label}
-      </div>
+      <div className="dropzone-label">{label}</div>
 
       {status === "idle" && (
-        <div style={{ fontSize: 13, color: "#9ca3af" }}>
-          Arrastrá tu PDF aquí o hacé click
-        </div>
+        <div className="dropzone-hint">Arrastrá tu PDF aquí o hacé click</div>
       )}
       {status === "loading" && (
-        <div style={{ fontSize: 13, color: "#2563eb" }}>Procesando {filename}…</div>
+        <div className="dropzone-processing">Procesando {filename}…</div>
       )}
       {status === "done" && (
-        <div style={{ fontSize: 13, color: "#16a34a", fontWeight: 500 }}>
+        <div className="dropzone-done">
           ✓ {filename}
           {lowConfidenceFields.length > 0 && (
-            <span style={{ color: "#d97706", fontWeight: 400, marginLeft: 6 }}>
+            <span className="dropzone-warning">
               ⚠ revisar: {lowConfidenceFields.join(", ")}
             </span>
           )}
         </div>
       )}
       {status === "error" && (
-        <div style={{ fontSize: 13, color: "#dc2626" }}>
-          ✗ {error || "Error al procesar el PDF"}
-        </div>
+        <div className="dropzone-error">✗ {error || "Error al procesar el PDF"}</div>
       )}
     </div>
   );

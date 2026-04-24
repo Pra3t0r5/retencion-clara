@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
 import { calcularGap, proyectarAbril, proyectarAnual } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
@@ -17,6 +17,19 @@ const $ = (n: number) =>
   }).format(n);
 
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
 
 const Row = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
   <div className={`row${highlight ? " highlight" : ""}`}>
@@ -169,10 +182,6 @@ function TabDatos({
     return result;
   }
 
-  const btnActive = { background: "#2563eb", color: "#fff" };
-  const btnIdle = { background: "#e5e7eb", color: "#374151" };
-  const btnBase: React.CSSProperties = { flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 };
-
   return (
     <>
       <PDFDropzone
@@ -186,11 +195,17 @@ function TabDatos({
         lowConfidenceFields={f572LowConf}
       />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setSection("recibo")} style={{ ...btnBase, ...(section === "recibo" ? btnActive : btnIdle) }}>
+      <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+        <button
+          onClick={() => setSection("recibo")}
+          className={`btn-section ${section === "recibo" ? "active" : "idle"}`}
+        >
           Recibo de sueldo
         </button>
-        <button onClick={() => setSection("f572")} style={{ ...btnBase, ...(section === "f572" ? btnActive : btnIdle) }}>
+        <button
+          onClick={() => setSection("f572")}
+          className={`btn-section ${section === "f572" ? "active" : "idle"}`}
+        >
           F.572
         </button>
       </div>
@@ -206,74 +221,101 @@ function TabDatos({
 }
 
 const TABS = [
-  { id: "resumen", label: "Resumen" },
-  { id: "f572", label: "F.572" },
-  { id: "datos", label: "✏️ Datos" },
+  { id: "resumen", label: "Resumen", className: "tab--resumen" },
+  { id: "f572",    label: "F.572",   className: "" },
+  { id: "datos",   label: "✏️ Datos", className: "" },
 ];
 
 export default function App() {
-  const [tab, setTab] = useState("resumen");
+  const [tab, setTab] = useState("datos");
   const [payslip, setPayslip] = useState<PayslipData | null>(RECIBO_MAR);
   const [f572, setF572] = useState<F572Data | null>(F572_DEFAULT);
+  const isDesktop = useIsDesktop();
+
+  // On desktop, Resumen lives in the right panel — don't show it in the left panel
+  useEffect(() => {
+    if (isDesktop && tab === "resumen") setTab("datos");
+  }, [isDesktop]);
 
   const hasData = payslip !== null && f572 !== null;
 
+  const header = (
+    <div className="header">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1>RetenciónClara</h1>
+          <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
+        </div>
+        {hasData && (
+          <button
+            className="btn-clear"
+            onClick={() => { setPayslip(null); setF572(null); setTab("datos"); }}
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const tabs = (
+    <div className="tabs">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          className={`tab${tab === t.id ? " active" : ""}${t.className ? ` ${t.className}` : ""}`}
+          onClick={() => setTab(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const leftContent = (
+    <>
+      {tab === "resumen" && (
+        hasData
+          ? <TabResumen payslip={payslip} f572={f572} />
+          : <div className="note" style={{ marginTop: "var(--space-8)" }}>
+              Ingresá tus datos en la pestaña ✏️ Datos para ver el resumen.
+            </div>
+      )}
+      {tab === "f572" && (
+        hasData
+          ? <TabF572 f572={f572} payslip={payslip} />
+          : <div className="note" style={{ marginTop: "var(--space-8)" }}>Sin datos de F.572 todavía.</div>
+      )}
+      {tab === "datos" && (
+        <TabDatos
+          payslip={payslip}
+          f572={f572}
+          onPayslipChange={p => { setPayslip(p); if (!isDesktop) setTab("resumen"); }}
+          onF572Change={f => { setF572(f); if (!isDesktop) setTab("resumen"); }}
+        />
+      )}
+    </>
+  );
+
   return (
     <div className="app">
-      <div className="container">
-        <div className="header">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <h1>RetenciónClara</h1>
-              <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
-            </div>
-            {hasData && (
-              <button
-                onClick={() => { setPayslip(null); setF572(null); setTab("datos"); }}
-                style={{
-                  marginTop: 4, padding: "4px 10px", fontSize: 12,
-                  background: "transparent", border: "1px solid #d1d5db",
-                  borderRadius: 6, cursor: "pointer", color: "#6b7280",
-                }}
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
+      <div className="app-grid">
+        {/* Left panel — inputs/tabs */}
+        <div className="panel-left">
+          {header}
+          {tabs}
+          {leftContent}
         </div>
 
-        <div className="tabs">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`tab${tab === t.id ? " active" : ""}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {tab === "resumen" && (
-          hasData
-            ? <TabResumen payslip={payslip} f572={f572} />
-            : <div className="note" style={{ marginTop: 32 }}>
-                Ingresá tus datos en la pestaña ✏️ Datos para ver el resumen.
+        {/* Right panel — always-visible Resumen on desktop */}
+        <div className="panel-right">
+          {hasData
+            ? <TabResumen payslip={payslip!} f572={f572!} />
+            : <div className="note" style={{ marginTop: "var(--space-8)" }}>
+                Ingresá tus datos para ver el resumen.
               </div>
-        )}
-        {tab === "f572" && (
-          hasData
-            ? <TabF572 f572={f572} payslip={payslip} />
-            : <div className="note" style={{ marginTop: 32 }}>Sin datos de F.572 todavía.</div>
-        )}
-        {tab === "datos" && (
-          <TabDatos
-            payslip={payslip}
-            f572={f572}
-            onPayslipChange={p => { setPayslip(p); setTab("resumen"); }}
-            onF572Change={f => { setF572(f); setTab("resumen"); }}
-          />
-        )}
+          }
+        </div>
       </div>
     </div>
   );
