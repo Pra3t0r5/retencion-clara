@@ -339,6 +339,11 @@ body { margin: 0; }
 
 .demo-link:hover { color: var(--color-primary); }
 
+.manual-toggle-row {
+  text-align: center;
+  margin: var(--space-3) 0 var(--space-4);
+}
+
 /* ── Empty states ────────────────────────────────────────────── */
 
 .empty-state {

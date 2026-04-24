@@ -198,6 +198,7 @@ function UploadForms({
   onF572Change: (d: F572Data) => void;
 }) {
   const [section, setSection] = useState<"recibo" | "f572">("recibo");
+  const [showManual, setShowManual] = useState(false);
   const [reciboLowConf, setReciboLowConf] = useState<string[]>([]);
   const [f572LowConf, setF572LowConf] = useState<string[]>([]);
 
@@ -236,26 +237,36 @@ function UploadForms({
         lowConfidenceFields={f572LowConf}
       />
 
-      <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
-        <button
-          onClick={() => setSection("recibo")}
-          className={`btn-section ${section === "recibo" ? "active" : "idle"}`}
-        >
-          Recibo de sueldo
-        </button>
-        <button
-          onClick={() => setSection("f572")}
-          className={`btn-section ${section === "f572" ? "active" : "idle"}`}
-        >
-          F.572
+      <div className="manual-toggle-row">
+        <button className="demo-link" onClick={() => setShowManual(v => !v)}>
+          {showManual ? "Ocultar carga manual ↑" : "Cargar datos manualmente ↓"}
         </button>
       </div>
 
-      {section === "recibo" && (
-        <PayslipForm initial={payslip ?? undefined} onSubmit={onPayslipChange} />
-      )}
-      {section === "f572" && (
-        <F572Form initial={f572 ?? undefined} onSubmit={onF572Change} />
+      {showManual && (
+        <>
+          <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+            <button
+              onClick={() => setSection("recibo")}
+              className={`btn-section ${section === "recibo" ? "active" : "idle"}`}
+            >
+              Recibo de sueldo
+            </button>
+            <button
+              onClick={() => setSection("f572")}
+              className={`btn-section ${section === "f572" ? "active" : "idle"}`}
+            >
+              F.572
+            </button>
+          </div>
+
+          {section === "recibo" && (
+            <PayslipForm initial={payslip ?? undefined} onSubmit={onPayslipChange} />
+          )}
+          {section === "f572" && (
+            <F572Form initial={f572 ?? undefined} onSubmit={onF572Change} />
+          )}
+        </>
       )}
     </>
   );
