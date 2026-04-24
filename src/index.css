@@ -249,9 +249,9 @@ body { margin: 0; }
 .detalle-row {
   display: flex;
   justify-content: space-between;
-  padding: var(--space-1) 0;
-  border-bottom: 1px solid var(--color-bg);
+  padding: 5px 0;
   font-size: var(--text-sm);
+  /* No border — rows separated by spacing only; sections separated by .detalle-divider */
 }
 
 .detalle-row.indent { padding-left: var(--space-3); }
@@ -260,7 +260,7 @@ body { margin: 0; }
 
 .detalle-row-value { font-weight: var(--font-weight-medium); color: var(--color-text); }
 
-.detalle-divider { border-top: 1px solid var(--color-border); margin: 6px 0; }
+.detalle-divider { border-top: 1px solid var(--color-border); margin: var(--space-2) 0; }
 
 .detalle-summary {
   display: flex;
