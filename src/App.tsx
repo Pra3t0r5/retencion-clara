@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
 import { calcularGap, proyectarAbril, proyectarAnual } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
@@ -7,7 +7,16 @@ import { PayslipForm } from "./components/PayslipForm";
 import { F572Form } from "./components/F572Form";
 import { PDFDropzone } from "./components/PDFDropzone";
 import { DetalleCalculo } from "./components/DetalleCalculo";
+import { MonthNav } from "./components/MonthNav";
+import { RetentionChart } from "./components/RetentionChart";
+import type { ChartPoint } from "./components/RetentionChart";
+import { LocalStorageAdapter } from "./storage";
+import type { FiscalYearData } from "./storage";
 import "./index.css";
+
+const YEAR = 2026;
+const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const adapter = new LocalStorageAdapter();
 
 const $ = (n: number) =>
   new Intl.NumberFormat("es-AR", {
@@ -32,7 +41,13 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
   </div>
 );
 
-function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data }) {
+function TabResumen({
+  payslip, f572, chartData,
+}: {
+  payslip: PayslipData;
+  f572: F572Data;
+  chartData: ChartPoint[];
+}) {
   const gaps = calcularGap(payslip, f572, payslip.meses);
   const abril = proyectarAbril(payslip, f572);
   const anual = proyectarAnual(payslip, f572);
@@ -53,6 +68,12 @@ function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data })
           <div className="stat-sub">por F.572</div>
         </div>
       </div>
+
+      {chartData.length > 0 && (
+        <Card title="📈 Progresión mensual">
+          <RetentionChart data={chartData} />
+        </Card>
+      )}
 
       <Card title="📋 Gap F.572 — no aplicado aún">
         <Row label="Indumentaria declarada" value={$(gaps.indumentaria_declarada)} />
@@ -92,7 +113,6 @@ function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data })
     </>
   );
 }
-
 
 function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
   const mesNames = [
@@ -213,10 +233,59 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState("resumen");
-  const [payslip, setPayslip] = useState<PayslipData | null>(RECIBO_MAR);
+  const [fiscalYear, setFiscalYear] = useState<FiscalYearData>(new Map());
+  const [activeMonth, setActiveMonth] = useState<number | null>(null);
   const [f572, setF572] = useState<F572Data | null>(F572_DEFAULT);
 
-  const hasData = payslip !== null && f572 !== null;
+  useEffect(() => {
+    adapter.loadYear(YEAR).then(stored => {
+      if (stored.size > 0) {
+        setFiscalYear(stored);
+        const months = [...stored.keys()].sort((a, b) => a - b);
+        setActiveMonth(months[months.length - 1]);
+      } else {
+        setFiscalYear(new Map([[3, RECIBO_MAR]]));
+        setActiveMonth(3);
+      }
+    });
+  }, []);
+
+  const activePayslip = activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null;
+  const hasData = activePayslip !== null && f572 !== null;
+
+  const chartData: ChartPoint[] = Array.from(fiscalYear.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([, p]) => ({
+      month: MES_ABBR[p.meses - 1],
+      retencion: p.retencion_mes,
+      acumulado: p.retencion_acumulada,
+    }));
+
+  function handlePayslipChange(p: PayslipData) {
+    const newMap = new Map(fiscalYear);
+    newMap.set(p.meses, p);
+    setFiscalYear(newMap);
+    setActiveMonth(p.meses);
+    setTab("resumen");
+    adapter.saveMonth(YEAR, p.meses, p);
+  }
+
+  function handleClearMonth() {
+    if (activeMonth === null) return;
+    const newMap = new Map(fiscalYear);
+    newMap.delete(activeMonth);
+    setFiscalYear(newMap);
+    adapter.deleteMonth(YEAR, activeMonth);
+    if (newMap.size === 0) {
+      setActiveMonth(null);
+      setTab("datos");
+    } else {
+      const remaining = [...newMap.keys()].sort((a, b) => a - b);
+      setActiveMonth(remaining[remaining.length - 1]);
+    }
+  }
+
+  const monthList = [...fiscalYear.keys()];
 
   return (
     <div className="app">
@@ -225,22 +294,31 @@ export default function App() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <h1>RetenciónClara</h1>
-              <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
+              <p>{activePayslip?.empleador ?? "Ingresá tus datos"} · {activePayslip?.periodo ?? String(YEAR)}</p>
             </div>
             {hasData && (
               <button
-                onClick={() => { setPayslip(null); setF572(null); setTab("datos"); }}
+                onClick={handleClearMonth}
                 style={{
                   marginTop: 4, padding: "4px 10px", fontSize: 12,
                   background: "transparent", border: "1px solid #d1d5db",
                   borderRadius: 6, cursor: "pointer", color: "#6b7280",
                 }}
               >
-                Limpiar
+                Limpiar mes
               </button>
             )}
           </div>
         </div>
+
+        {monthList.length > 0 && (
+          <MonthNav
+            months={monthList}
+            active={activeMonth}
+            onSelect={setActiveMonth}
+            onAddMonth={() => { setActiveMonth(null); setTab("datos"); }}
+          />
+        )}
 
         <div className="tabs">
           {TABS.map((t) => (
@@ -256,21 +334,23 @@ export default function App() {
 
         {tab === "resumen" && (
           hasData
-            ? <TabResumen payslip={payslip} f572={f572} />
+            ? <TabResumen payslip={activePayslip} f572={f572} chartData={chartData} />
             : <div className="note" style={{ marginTop: 32 }}>
-                Ingresá tus datos en la pestaña ✏️ Datos para ver el resumen.
+                {fiscalYear.size === 0
+                  ? "Cargá tu primer recibo para ver la progresión mensual."
+                  : "Seleccioná un mes o cargá un nuevo recibo."}
               </div>
         )}
         {tab === "f572" && (
           hasData
-            ? <TabF572 f572={f572} payslip={payslip} />
+            ? <TabF572 f572={f572} payslip={activePayslip} />
             : <div className="note" style={{ marginTop: 32 }}>Sin datos de F.572 todavía.</div>
         )}
         {tab === "datos" && (
           <TabDatos
-            payslip={payslip}
+            payslip={activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null}
             f572={f572}
-            onPayslipChange={p => { setPayslip(p); setTab("resumen"); }}
+            onPayslipChange={handlePayslipChange}
             onF572Change={f => { setF572(f); setTab("resumen"); }}
           />
         )}

@@ -1,55 +1,44 @@
 # Research: Multi-Período, Históricos y Gráficos (spec 004)
 
-## Auth Backend
+**Scope**: Constitution-compliant descope — US1 (multi-month load + nav) + US2 (chart) only.
+US3 (auth + Supabase) dropped — violates Constitution Principle I (NON-NEGOTIABLE).
 
-**Decision**: Supabase Auth (email + password)  
-**Rationale**: Single dependency for both auth and storage. Free tier sufficient.
-httpOnly cookie sessions via `@supabase/ssr`. RLS provides user data isolation.  
-**Alternatives**: Clerk (better DX, extra service), Firebase Auth (Google vendor lock-in).
+## Chart Approach
 
-## Chart Library
-
-**Decision**: Recharts ~46kB gzip  
-**Rationale**: React-native JSX API, responsive out of the box, within 50kB spec limit.
-`<BarChart>` + `<ResponsiveContainer>` covers all chart requirements.  
-**Bundle impact**: ~46kB gzip added to JS bundle. Acceptable — chart is on a tab, code-splittable.
-
-## Session Token Storage
-
-**Decision**: httpOnly cookies via `@supabase/ssr`  
-**Rationale**: NFR security requirement. Prevents XSS token theft. Supabase SSR package
-handles cookie management in browser-only mode (no SSR needed for this SPA).
-
-## Guest vs Auth Storage
-
-**Decision**: Storage router pattern with `StorageAdapter` interface  
-**Rationale**: Keeps App.tsx and engine pure — no auth knowledge leaks into business logic.
-Guest users get localStorage; authenticated users get Supabase. Same API.
+**Decision**: Inline SVG (no library)
+**Rationale**: Max 12 data points per fiscal year. SVG is browser-native, costs zero bundle bytes,
+works offline, and styled with inline styles per project convention (Principle V YAGNI). A 46kB
+Recharts dependency is not justified for 12 static bars.
+**Alternatives**: Recharts (rejected — unnecessary dep), Chart.js (rejected — larger, imperative API).
 
 ## Multi-Month State
 
-**Decision**: `Map<number, PayslipData>` keyed by month number (1-12)  
-**Rationale**: Sparse — user may have Jan, Mar, Jul without Feb, Apr-Jun. Map naturally
-represents sparse data. React state: `useState<Map<number, PayslipData>>(new Map())`.
+**Decision**: `Map<number, PayslipData>` keyed by month number (1–12)
+**Rationale**: Sparse — user may have Jan, Mar, Jul without Feb, Apr–Jun. Map naturally represents
+sparse data. React state: `useState<Map<number, PayslipData>>(new Map())`.
 
-## Conflict Resolution
+## Persistence
 
-**Decision**: Last-write-wins per month (as per FR-008)  
-**Rationale**: In-family app with one primary user per device. No collaborative editing.
-Supabase `upsert` with `onConflict: 'user_id,year,month'` implements this automatically.
+**Decision**: localStorage, key `rc_year_{YYYY}`
+**Rationale**: Constitution Principle I prohibits server storage. localStorage provides cross-session
+persistence on same device with zero backend dependency. Data never leaves the browser.
+**Limitation**: No cross-device sync. Acceptable — privacy-first, single-user tool.
+
+## StorageAdapter Interface
+
+Thin interface kept for testability even with one implementation. Decouples App.tsx from
+`window.localStorage` calls directly and trivializes future implementations if needed.
 
 ## Chart Data Derivation
 
-Recharts data array derived from stored months + engine calculations:
+Pure computation from `FiscalYearData` + engine — no new engine API required:
 
 ```typescript
 const chartData = Array.from(fiscalYear.entries())
   .sort(([a], [b]) => a - b)
   .map(([month, payslip]) => ({
-    month: MONTH_NAMES[month],
-    retencion: calcularRetención(payslip, /* ... */),
-    acumulado: /* cumulative sum */
+    month: MONTH_NAMES[month - 1],  // "Ene", "Feb", ...
+    retencion: /* engine output for this month */,
+    acumulado: /* cumulative sum up to this month */,
   }));
 ```
-
-This derivation is pure (engine function) — no new backend calls.

@@ -2,30 +2,12 @@
 
 ## Entities
 
-### PayslipEntry (Supabase / localStorage)
+### FiscalYearData (React state + localStorage)
 
-Stores one month's payslip data for one user in one fiscal year.
-
-| Field | Type | Notes |
-|-------|------|-------|
-| id | UUID | PK, auto-generated |
-| user_id | UUID | FK → auth.users; null for guest (localStorage only) |
-| year | INT | Fiscal year (e.g., 2026) |
-| month | INT | 1–12 |
-| data | JSONB | Serialized `PayslipData` (plaintext in spec 004; E2E-encrypted in spec 007) |
-| created_at | TIMESTAMPTZ | auto |
-| updated_at | TIMESTAMPTZ | auto |
-
-**Unique constraint**: `(user_id, year, month)` — one entry per user per month.
-
-**RLS**: Users can only SELECT/INSERT/UPDATE/DELETE their own rows (`auth.uid() = user_id`).
-
-### FiscalYearData (React state / localStorage)
-
-In-memory representation used by the React app:
+In-memory representation — sparse, only months with loaded payslips present:
 
 ```typescript
-type FiscalYearData = Map<number, PayslipData>; // key: month 1-12
+type FiscalYearData = Map<number, PayslipData>; // key: month 1–12
 ```
 
 ### StorageAdapter (interface)
@@ -38,46 +20,21 @@ interface StorageAdapter {
 }
 ```
 
-Implementations:
-- `LocalStorageAdapter`: Guest mode — JSON serialized to `localStorage['rc_year_YYYY']`
-- `SupabaseAdapter`: Authenticated mode — Supabase JS SDK CRUD
+Single implementation: `LocalStorageAdapter`.
 
-### AuthState (React context)
+### ChartPoint
 
 ```typescript
-type AuthState = {
-  user: User | null;    // Supabase User type
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+type ChartPoint = {
+  month: string;    // "Ene", "Feb", ..., "Dic"
+  retencion: number; // monthly retention in ARS
+  acumulado: number; // cumulative YTD retention in ARS
 };
 ```
 
-## State Transitions
-
-```
-App load
-  → check Supabase session
-    → authenticated: load FiscalYearData from Supabase
-    → guest: load FiscalYearData from localStorage
-
-User adds/edits payslip
-  → saveMonth() via StorageAdapter
-    → authenticated: upsert to Supabase
-    → guest: update localStorage
-
-User signs in
-  → migrate localStorage data to Supabase (if any)
-  → switch StorageAdapter to SupabaseAdapter
-
-User signs out
-  → clear in-memory FiscalYearData
-  → switch StorageAdapter to LocalStorageAdapter
-```
+Derived at render time from `FiscalYearData` by running the engine per month — not persisted.
 
 ## localStorage Schema
-
-Guest data stored as:
 
 ```json
 {
@@ -88,4 +45,28 @@ Guest data stored as:
 }
 ```
 
-Key format: `rc_year_{YYYY}`. Only current fiscal year stored in v1.
+Key format: `rc_year_{YYYY}`. Integer month keys (1–12). Only current fiscal year in v1.
+
+## State Transitions
+
+```
+App load
+  → LocalStorageAdapter.loadYear(currentYear)
+  → populate fiscalYear Map
+  → if empty: show empty-state hint
+
+User saves payslip for month M
+  → saveMonth(year, M, data)  → update Map[M] = data
+  → MonthNav re-renders with M highlighted
+
+User clicks "+ Agregar mes"
+  → activeMonth = null  → form resets for new month entry
+
+User clicks month button in MonthNav
+  → activeMonth = M
+  → Resumen + DetalleCalculo display data for Map[M]
+
+User clears/deletes month M
+  → deleteMonth(year, M)  → remove Map[M]
+  → if activeMonth === M: activeMonth = null
+```
