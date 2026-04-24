@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
 import { calcularGap, proyectarAbril, proyectarAnual } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
@@ -18,6 +18,19 @@ const $ = (n: number) =>
 
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
+
 const Row = ({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) => (
   <div className={`row${highlight ? " highlight" : ""}`}>
     <span className="row-label">{label}</span>
@@ -31,6 +44,29 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
     {children}
   </div>
 );
+
+function EmptyState({
+  icon, title, desc, actionLabel, onAction,
+}: {
+  icon: string;
+  title: string;
+  desc: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="empty-state">
+      <div className="empty-state-icon">{icon}</div>
+      <div className="empty-state-title">{title}</div>
+      <p className="empty-state-desc">{desc}</p>
+      {actionLabel && onAction && (
+        <button className="empty-state-action" onClick={onAction}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data }) {
   const gaps = calcularGap(payslip, f572, payslip.meses);
@@ -93,14 +129,33 @@ function TabResumen({ payslip, f572 }: { payslip: PayslipData; f572: F572Data })
   );
 }
 
-
-function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
+function TabF572({
+  f572, payslip, onGoToDatos,
+}: {
+  f572: F572Data;
+  payslip: PayslipData;
+  onGoToDatos: () => void;
+}) {
   const mesNames = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio",
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
   ];
   const cuotaTotal = mesNames.reduce((s, m) => s + ((f572.cuota_medica as Record<string, number>)[m] ?? 0), 0);
   const indTotal   = mesNames.reduce((s, m) => s + ((f572.indumentaria as Record<string, number>)[m] ?? 0), 0);
+
+  const hasF572Data = cuotaTotal > 0 || indTotal > 0 || f572.conyuge || f572.hijos > 0;
+
+  if (!hasF572Data) {
+    return (
+      <EmptyState
+        icon="📄"
+        title="Sin declaración F.572"
+        desc="No encontramos deducciones cargadas. Ingresá tu F.572 SiRADIG para calcular cuánto podés recuperar en deducciones de cuota médica e indumentaria."
+        actionLabel="Ingresar F.572"
+        onAction={onGoToDatos}
+      />
+    );
+  }
 
   return (
     <>
@@ -134,9 +189,8 @@ function TabF572({ f572, payslip }: { f572: F572Data; payslip: PayslipData }) {
   );
 }
 
-function TabDatos({
-  payslip, f572,
-  onPayslipChange, onF572Change,
+function UploadForms({
+  payslip, f572, onPayslipChange, onF572Change,
 }: {
   payslip: PayslipData | null;
   f572: F572Data | null;
@@ -144,6 +198,7 @@ function TabDatos({
   onF572Change: (d: F572Data) => void;
 }) {
   const [section, setSection] = useState<"recibo" | "f572">("recibo");
+  const [showManual, setShowManual] = useState(false);
   const [reciboLowConf, setReciboLowConf] = useState<string[]>([]);
   const [f572LowConf, setF572LowConf] = useState<string[]>([]);
 
@@ -154,7 +209,7 @@ function TabDatos({
     try {
       const parsed = PayslipSchema.parse({ ...result, gnsi: result.gnsi ?? 0, impuesto_determinado: result.impuesto_determinado ?? 0 });
       onPayslipChange(parsed);
-    } catch { /* low-confidence extraction — user reviews form */ }
+    } catch { /* low-confidence — user reviews form */ }
     return result;
   }
 
@@ -169,10 +224,6 @@ function TabDatos({
     return result;
   }
 
-  const btnActive = { background: "#2563eb", color: "#fff" };
-  const btnIdle = { background: "#e5e7eb", color: "#374151" };
-  const btnBase: React.CSSProperties = { flex: 1, padding: "8px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 };
-
   return (
     <>
       <PDFDropzone
@@ -186,94 +237,186 @@ function TabDatos({
         lowConfidenceFields={f572LowConf}
       />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setSection("recibo")} style={{ ...btnBase, ...(section === "recibo" ? btnActive : btnIdle) }}>
-          Recibo de sueldo
-        </button>
-        <button onClick={() => setSection("f572")} style={{ ...btnBase, ...(section === "f572" ? btnActive : btnIdle) }}>
-          F.572
+      <div className="manual-toggle-row">
+        <button className="demo-link" onClick={() => setShowManual(v => !v)}>
+          {showManual ? "Ocultar carga manual ↑" : "Cargar datos manualmente ↓"}
         </button>
       </div>
 
-      {section === "recibo" && (
-        <PayslipForm initial={payslip ?? undefined} onSubmit={onPayslipChange} />
-      )}
-      {section === "f572" && (
-        <F572Form initial={f572 ?? undefined} onSubmit={onF572Change} />
+      {showManual && (
+        <>
+          <div style={{ display: "flex", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+            <button
+              onClick={() => setSection("recibo")}
+              className={`btn-section ${section === "recibo" ? "active" : "idle"}`}
+            >
+              Recibo de sueldo
+            </button>
+            <button
+              onClick={() => setSection("f572")}
+              className={`btn-section ${section === "f572" ? "active" : "idle"}`}
+            >
+              F.572
+            </button>
+          </div>
+
+          {section === "recibo" && (
+            <PayslipForm initial={payslip ?? undefined} onSubmit={onPayslipChange} />
+          )}
+          {section === "f572" && (
+            <F572Form initial={f572 ?? undefined} onSubmit={onF572Change} />
+          )}
+        </>
       )}
     </>
   );
 }
 
 const TABS = [
-  { id: "resumen", label: "Resumen" },
-  { id: "f572", label: "F.572" },
-  { id: "datos", label: "✏️ Datos" },
+  { id: "resumen", label: "Resumen", className: "tab--resumen" },
+  { id: "f572",    label: "F.572",   className: "" },
+  { id: "datos",   label: "✏️ Datos", className: "" },
 ];
 
 export default function App() {
-  const [tab, setTab] = useState("resumen");
-  const [payslip, setPayslip] = useState<PayslipData | null>(RECIBO_MAR);
-  const [f572, setF572] = useState<F572Data | null>(F572_DEFAULT);
+  const [tab, setTab] = useState("datos");
+  const [payslip, setPayslip] = useState<PayslipData | null>(null);
+  const [f572, setF572] = useState<F572Data | null>(null);
+  const isDesktop = useIsDesktop();
+
+  useEffect(() => {
+    if (isDesktop && tab === "resumen") setTab("datos");
+  }, [isDesktop]);
 
   const hasData = payslip !== null && f572 !== null;
 
-  return (
-    <div className="app">
-      <div className="container">
-        <div className="header">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <h1>RetenciónClara</h1>
-              <p>{payslip?.empleador ?? "Ingresá tus datos"} · {payslip?.periodo ?? "2026"}</p>
-            </div>
-            {hasData && (
-              <button
-                onClick={() => { setPayslip(null); setF572(null); setTab("datos"); }}
-                style={{
-                  marginTop: 4, padding: "4px 10px", fontSize: 12,
-                  background: "transparent", border: "1px solid #d1d5db",
-                  borderRadius: 6, cursor: "pointer", color: "#6b7280",
-                }}
-              >
-                Limpiar
+  function handlePayslipChange(p: PayslipData) {
+    setPayslip(p);
+    if (!isDesktop) setTab("resumen");
+  }
+
+  function handleF572Change(f: F572Data) {
+    setF572(f);
+    if (!isDesktop) setTab("resumen");
+  }
+
+  function handleLoadDemo() {
+    setPayslip(RECIBO_MAR);
+    setF572(F572_DEFAULT);
+    if (!isDesktop) setTab("resumen");
+  }
+
+  // ── Welcome screen (no data) ────────────────────────────────
+  if (!hasData) {
+    return (
+      <div className="app">
+        <div className="welcome-layout">
+          <div className="welcome-left">
+            <div className="welcome-app-name">RetenciónClara</div>
+            <div className="welcome-hero">
+              <div className="welcome-hero-icon">🧾</div>
+              <h2 className="welcome-hero-title">Calculá tu retención de ganancias</h2>
+              <p className="welcome-hero-desc">
+                Subí tu recibo de sueldo y el F.572 SiRADIG para ver cuánto te retienen,
+                cuánto podés recuperar con deducciones pendientes y proyectar los meses que vienen.
+              </p>
+              <div className="welcome-steps">
+                <div className="welcome-step">
+                  <div className="welcome-step-num">1</div>
+                  <div className="welcome-step-text">Subí o cargá tu recibo de sueldo</div>
+                </div>
+                <div className="welcome-step">
+                  <div className="welcome-step-num">2</div>
+                  <div className="welcome-step-text">Completá tu declaración F.572</div>
+                </div>
+                <div className="welcome-step">
+                  <div className="welcome-step-num">3</div>
+                  <div className="welcome-step-text">Analizá el gap y la proyección</div>
+                </div>
+              </div>
+              <button className="demo-link" onClick={handleLoadDemo}>
+                Probar con datos de ejemplo →
               </button>
-            )}
+            </div>
+          </div>
+
+          <div className="welcome-right">
+            <UploadForms
+              payslip={payslip}
+              f572={f572}
+              onPayslipChange={handlePayslipChange}
+              onF572Change={handleF572Change}
+            />
           </div>
         </div>
+      </div>
+    );
+  }
 
-        <div className="tabs">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`tab${tab === t.id ? " active" : ""}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
+  // ── Normal layout (has data) ────────────────────────────────
+  const header = (
+    <div className="header">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <h1>RetenciónClara</h1>
+          <p>{payslip.empleador ?? "Sin empleador"} · {payslip.periodo ?? "2026"}</p>
         </div>
+        <button
+          className="btn-clear"
+          onClick={() => { setPayslip(null); setF572(null); }}
+        >
+          Limpiar
+        </button>
+      </div>
+    </div>
+  );
 
-        {tab === "resumen" && (
-          hasData
-            ? <TabResumen payslip={payslip} f572={f572} />
-            : <div className="note" style={{ marginTop: 32 }}>
-                Ingresá tus datos en la pestaña ✏️ Datos para ver el resumen.
-              </div>
-        )}
-        {tab === "f572" && (
-          hasData
-            ? <TabF572 f572={f572} payslip={payslip} />
-            : <div className="note" style={{ marginTop: 32 }}>Sin datos de F.572 todavía.</div>
-        )}
-        {tab === "datos" && (
-          <TabDatos
-            payslip={payslip}
-            f572={f572}
-            onPayslipChange={p => { setPayslip(p); setTab("resumen"); }}
-            onF572Change={f => { setF572(f); setTab("resumen"); }}
-          />
-        )}
+  const tabs = (
+    <div className="tabs">
+      {TABS.map((t) => (
+        <button
+          key={t.id}
+          className={`tab${tab === t.id ? " active" : ""}${t.className ? ` ${t.className}` : ""}`}
+          onClick={() => setTab(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const leftContent = (
+    <>
+      {tab === "resumen" && <TabResumen payslip={payslip} f572={f572} />}
+      {tab === "f572" && (
+        <TabF572
+          f572={f572}
+          payslip={payslip}
+          onGoToDatos={() => setTab("datos")}
+        />
+      )}
+      {tab === "datos" && (
+        <UploadForms
+          payslip={payslip}
+          f572={f572}
+          onPayslipChange={handlePayslipChange}
+          onF572Change={handleF572Change}
+        />
+      )}
+    </>
+  );
+
+  return (
+    <div className="app">
+      <div className="app-grid">
+        <div className="panel-left">
+          {header}
+          {tabs}
+          {leftContent}
+        </div>
+        <div className="panel-right">
+          <TabResumen payslip={payslip} f572={f572} />
+        </div>
       </div>
     </div>
   );
