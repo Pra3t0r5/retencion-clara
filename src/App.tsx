@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
+import { RECIBO_MAR, RECIBO_ABR, F572 as F572_DEFAULT } from "./data";
 import { calcularGap, proyectarAbril, proyectarAnual, hasF572Data } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
 import { PayslipData as PayslipSchema, F572Data as F572Schema } from "./engine/schemas";
@@ -348,8 +348,8 @@ export default function App() {
   }
 
   function handleLoadDemo() {
-    setFiscalYear(new Map([[3, RECIBO_MAR]]));
-    setActiveMonth(3);
+    setFiscalYear(new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]));
+    setActiveMonth(4);
     setF572(F572_DEFAULT);
     if (!isDesktop) setTab("resumen");
   }
