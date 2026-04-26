@@ -130,3 +130,9 @@ export function proyectarAnual(payslip: PayslipData, f572: F572Data): Proyeccion
     efectiva_rate: retencion_total_anual / bruto_anual,
   };
 }
+
+// FR-008: true when F.572 has at least one positive indumentaria or cuota_medica value
+export function hasF572Data(f: F572Data): boolean {
+  return Object.values(f.indumentaria).some(v => v > 0) ||
+         Object.values(f.cuota_medica).some(v => v > 0);
+}

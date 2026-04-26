@@ -67,6 +67,10 @@ See AGENTS.md for what agents can/cannot do.
 ## Active Technologies
 - TypeScript (strict) + React 19 (feature/001-tax-calculator)
 - N/A — all state in React `useState`, nothing persisted (feature/001-tax-calculator)
+- TypeScript (strict) ~6.0 + React 19 + React 19, pdfjs-dist, Zod, Vitest — no new runtime deps added (004-multi-periodo-historicos)
+- localStorage (browser-native; no server) (004-multi-periodo-historicos)
+- TypeScript 5+ strict + React 19 + Zod (schema validation — already in use) (004-multi-periodo-historicos)
+- N/A — no new persistence (comparison is in-session only) (004-multi-periodo-historicos)
 
 ## Recent Changes
 - feature/001-tax-calculator: Added TypeScript (strict) + React 19

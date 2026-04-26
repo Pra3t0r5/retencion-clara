@@ -24,6 +24,29 @@ export const RECIBO_MAR: PayslipData = {
   neto_mes:               6_527_148.00,
 };
 
+// Fernando Albertengo — WORMHOLE S.A. — Abril 2026
+// Source: official payslip + F.572 rectificativa aplicada en este recibo
+// retencion_mes = 498.656,99 (impuesto a retener); ajuste período ant. = -1.004.490,87 (devolución)
+export const RECIBO_ABR: PayslipData = {
+  periodo:  "Abril 2026",
+  empleador: "WORMHOLE S.A.",
+  meses: 4,
+  bruto_acumulado:       36_423_969.49,
+  aportes_acumulados:     2_940_076.27,
+  indumentaria_aplicada:  1_192_767.97,
+  cuota_medica_aplicada:  1_333_083.83,
+  ded_especial:           8_242_884.00,
+  gni:                    1_717_267.52,
+  ded_conyuge:            1_617_321.56,
+  ded_hijos:                815_621.16,
+  ded_especial_12:        1_032_757.85,
+  gnsi:                  17_532_189.33,
+  impuesto_determinado:   4_048_291.16,
+  retencion_acumulada:    4_048_291.16,
+  retencion_mes:            498_656.99,
+  neto_mes:               8_069_029.00,
+};
+
 export const F572: F572Data = {
   conyuge: true,
   hijos: 1,
