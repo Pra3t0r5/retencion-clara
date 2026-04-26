@@ -69,7 +69,9 @@ export function ComparacionSIRADIG({ mesA, mesB, f572A, f572B, allMonths, onChan
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.5)',
+      background: 'rgba(0,0,0,0.75)',
+      backdropFilter: 'blur(4px)',
+      WebkitBackdropFilter: 'blur(4px)',
       zIndex: 100,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 16,
