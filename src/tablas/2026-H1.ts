@@ -9,6 +9,13 @@ export type TaxBracket = {
 // Ground truth from recibo "Detalle de Cálculo": bracket 8 (31%) starts at $10,125,152.33,
 // fijo $2,098,781.57. Lower brackets derived from standard 1:1:1:1.5:1.5:3:3 width
 // pattern with U = $843,762.694. Full ARCA RG publication needed to confirm lower values.
+//
+// KNOWN DISCREPANCY — April 2026 (Principio II open bug):
+// April GNSI = 17,532,189.33. With this table (bracket 9, 35%, desde 15,187,728.50):
+//   engine → 4,488,741 | payslip → 4,048,291 | Δ ≈ 440,450
+// Hypothesis: ARCA published an intra-semester bracket update (new RG) between March and
+// April 2026, shifting thresholds upward. Fix requires obtaining that official ARCA RG.
+// Tracked: calculator.test.ts > "impuesto determinado matches Apr 2026 ± 100" (skipped).
 export const TABLAS_2026_H1 = {
   tramos: [
     { desde:              0,          hasta:    843_762.69,  fijo:          0,          pct: 0.05 },

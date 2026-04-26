@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
-import { calcularGap, proyectarAbril, proyectarAnual } from "./engine/calculator";
+import { calcularGap, proyectarAbril, proyectarAnual, hasF572Data } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
 import { PayslipData as PayslipSchema, F572Data as F572Schema } from "./engine/schemas";
 import { PayslipForm } from "./components/PayslipForm";
@@ -18,6 +18,7 @@ const YEAR = 2026;
 const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const EMPTY_F572: F572Data = { conyuge: false, hijos: 0, cuota_medica: {}, indumentaria: {} };
 const adapter = new LocalStorageAdapter();
+
 
 const $ = (n: number) =>
   new Intl.NumberFormat("es-AR", {
@@ -112,21 +113,23 @@ function TabResumen({
         </Card>
       )}
 
-      <Card title="📋 Gap F.572 — no aplicado aún">
-        <Row label="Indumentaria declarada" value={$(gaps.indumentaria_declarada)} />
-        <Row label="Aplicada en recibo" value={$(gaps.indumentaria_aplicada)} />
-        <Row label="Gap indumentaria" value={$(gaps.indumentaria_gap)} highlight />
-        <div className="divider" />
-        <Row label="Cuota médica declarada" value={$(gaps.cuota_medica_declarada)} />
-        <Row label="Aplicada en recibo" value={$(gaps.cuota_medica_aplicada)} />
-        <Row label="Gap cuota médica" value={$(gaps.cuota_medica_gap)} highlight />
-        <div className="divider" />
-        <Row
-          label={`Total gap × ${pct(gaps.tax_rate)}`}
-          value={`${$(gaps.total_gap)} → ahorra ${$(gaps.ahorro_estimado)}`}
-          highlight
-        />
-      </Card>
+      {hasF572Data(f572) && (
+        <Card title="📋 Deducción no acreditada (F.572)">
+          <Row label="Indumentaria declarada" value={$(gaps.indumentaria_declarada)} />
+          <Row label="Aplicada en recibo" value={$(gaps.indumentaria_aplicada)} />
+          <Row label="Gap indumentaria" value={$(gaps.indumentaria_gap)} highlight />
+          <div className="divider" />
+          <Row label="Cuota médica declarada" value={$(gaps.cuota_medica_declarada)} />
+          <Row label="Aplicada en recibo" value={$(gaps.cuota_medica_aplicada)} />
+          <Row label="Gap cuota médica" value={$(gaps.cuota_medica_gap)} highlight />
+          <div className="divider" />
+          <Row
+            label={`Total gap × ${pct(gaps.tax_rate)}`}
+            value={`${$(gaps.total_gap)} → ahorra ${$(gaps.ahorro_estimado)}`}
+            highlight
+          />
+        </Card>
+      )}
 
       <Card title="📅 Proyección próximo mes">
         <Row label="Gap retroactivo (rectificativa)" value={$(abril.nuevas_deducciones_ene_mar)} />
@@ -426,12 +429,16 @@ export default function App() {
     </div>
   );
 
+  const visibleTabs = isDesktop ? TABS.filter(t => t.id !== "resumen") : TABS;
+  // On desktop the right panel always shows resumen; treat "resumen" tab as "f572"
+  const activeTab = isDesktop && tab === "resumen" ? "f572" : tab;
+
   const tabs = (
     <div className="tabs">
-      {TABS.map((t) => (
+      {visibleTabs.map((t) => (
         <button
           key={t.id}
-          className={`tab${tab === t.id ? " active" : ""}${t.className ? ` ${t.className}` : ""}`}
+          className={`tab${activeTab === t.id ? " active" : ""}${t.className ? ` ${t.className}` : ""}`}
           onClick={() => setTab(t.id)}
         >
           {t.label}
@@ -442,7 +449,7 @@ export default function App() {
 
   const leftContent = (
     <>
-      {tab === "resumen" && (
+      {activeTab === "resumen" && (
         activePayslip
           ? <TabResumen payslip={activePayslip} f572={activeF572} chartData={chartData} />
           : <EmptyState
@@ -453,7 +460,7 @@ export default function App() {
               onAction={() => setTab("datos")}
             />
       )}
-      {tab === "f572" && (
+      {activeTab === "f572" && (
         activePayslip
           ? <TabF572 f572={activeF572} payslip={activePayslip} onGoToDatos={() => setTab("datos")} />
           : <EmptyState
@@ -462,7 +469,7 @@ export default function App() {
               desc="Seleccioná un mes para ver el análisis F.572."
             />
       )}
-      {tab === "datos" && (
+      {activeTab === "datos" && (
         <UploadForms
           payslip={activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null}
           f572={f572}

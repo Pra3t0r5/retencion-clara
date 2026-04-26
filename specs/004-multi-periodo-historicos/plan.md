@@ -67,4 +67,6 @@ src/
 
 ## Complexity Tracking
 
-No constitution violations. No entries required.
+| Complexity | Location | Justification |
+|---|---|---|
+| `RetentionChart`: interactive tooltip + legend (~100 lines beyond T009 base spec) | `src/components/RetentionChart.tsx` | SVG bars without value labels are unreadable on mobile. Tooltip + legend are minimum UX for chart comprehension. Zero new dependencies — still inline SVG, no library. No new abstraction introduced. Added during T009 implementation; no Principle V violation since complexity is contained within one component with no deps or reusable abstractions. |

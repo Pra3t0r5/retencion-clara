@@ -70,3 +70,10 @@ User clears/deletes month M
   → deleteMonth(year, M)  → remove Map[M]
   → if activeMonth === M: activeMonth = null
 ```
+
+## Multi-Year Support
+
+The `rc_year_{YYYY}` localStorage key format implicitly supports multiple fiscal years — each
+year is a separate key with no schema migration required. In v1, only the current fiscal year
+(2026) is written or read. Year-over-year comparison (US4) can be added in a future spec by
+reading multiple `rc_year_*` keys without any breaking change to the existing schema.
