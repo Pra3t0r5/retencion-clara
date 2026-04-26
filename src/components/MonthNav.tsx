@@ -5,9 +5,10 @@ type Props = {
   active: number | null;
   onSelect: (month: number) => void;
   onAddMonth: () => void;
+  onComparar?: () => void;
 };
 
-export function MonthNav({ months, active, onSelect, onAddMonth }: Props) {
+export function MonthNav({ months, active, onSelect, onAddMonth, onComparar }: Props) {
   const sorted = [...months].sort((a, b) => a - b);
 
   return (
@@ -51,6 +52,24 @@ export function MonthNav({ months, active, onSelect, onAddMonth }: Props) {
       >
         + Agregar mes
       </button>
+      {sorted.length >= 2 && onComparar && (
+        <button
+          onClick={onComparar}
+          style={{
+            padding: '4px 12px',
+            borderRadius: 6,
+            border: '1px solid var(--primary)',
+            background: 'var(--primary-bg)',
+            color: 'var(--primary)',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginLeft: 4,
+          }}
+        >
+          Comparar →
+        </button>
+      )}
     </div>
   );
 }

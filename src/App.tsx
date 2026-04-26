@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RECIBO_MAR, F572 as F572_DEFAULT } from "./data";
+import { RECIBO_MAR, RECIBO_ABR, F572 as F572_DEFAULT } from "./data";
 import { calcularGap, proyectarAbril, proyectarAnual, hasF572Data } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
 import { PayslipData as PayslipSchema, F572Data as F572Schema } from "./engine/schemas";
@@ -8,6 +8,7 @@ import { F572Form } from "./components/F572Form";
 import { PDFDropzone } from "./components/PDFDropzone";
 import { DetalleCalculo } from "./components/DetalleCalculo";
 import { MonthNav } from "./components/MonthNav";
+import { ComparacionSIRADIG } from "./components/ComparacionSIRADIG";
 import { RetentionChart } from "./components/RetentionChart";
 import type { ChartPoint } from "./components/RetentionChart";
 import { LocalStorageAdapter } from "./storage";
@@ -308,6 +309,7 @@ export default function App() {
   const [fiscalYear, setFiscalYear] = useState<FiscalYearData>(new Map());
   const [activeMonth, setActiveMonth] = useState<number | null>(null);
   const [f572, setF572] = useState<F572Data | null>(null);
+  const [comparacionMeses, setComparacionMeses] = useState<{ a: number; b: number } | null>(null);
   const isDesktop = useIsDesktop();
 
   useEffect(() => {
@@ -346,8 +348,8 @@ export default function App() {
   }
 
   function handleLoadDemo() {
-    setFiscalYear(new Map([[3, RECIBO_MAR]]));
-    setActiveMonth(3);
+    setFiscalYear(new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]));
+    setActiveMonth(4);
     setF572(F572_DEFAULT);
     if (!isDesktop) setTab("resumen");
   }
@@ -490,6 +492,10 @@ export default function App() {
             active={activeMonth}
             onSelect={setActiveMonth}
             onAddMonth={() => { setActiveMonth(null); setTab("datos"); }}
+            onComparar={() => {
+              const sorted = [...fiscalYear.keys()].sort((a, b) => a - b);
+              setComparacionMeses({ a: sorted.at(-2)!, b: sorted.at(-1)! });
+            }}
           />
           {tabs}
           {leftContent}
@@ -505,6 +511,19 @@ export default function App() {
           }
         </div>
       </div>
+      {comparacionMeses !== null &&
+        fiscalYear.has(comparacionMeses.a) &&
+        fiscalYear.has(comparacionMeses.b) && (
+        <ComparacionSIRADIG
+          mesA={fiscalYear.get(comparacionMeses.a)!}
+          mesB={fiscalYear.get(comparacionMeses.b)!}
+          f572A={activeF572}
+          f572B={activeF572}
+          allMonths={[...fiscalYear.keys()].sort((a, b) => a - b)}
+          onChangeMonths={(a, b) => setComparacionMeses({ a, b })}
+          onClose={() => setComparacionMeses(null)}
+        />
+      )}
     </div>
   );
 }
