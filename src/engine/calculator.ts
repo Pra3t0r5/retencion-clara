@@ -1,5 +1,5 @@
 import { TABLAS_2026_H1, type TaxBracket } from '../tablas/2026-H1';
-import type { PayslipData, F572Data, GapAnalysis } from './schemas';
+import type { PayslipData, F572Data, GapAnalysis, DiferenciaAnalisis } from './schemas';
 
 export type ProyeccionAbril = {
   nuevas_deducciones_ene_mar: number;
@@ -135,4 +135,52 @@ export function proyectarAnual(payslip: PayslipData, f572: F572Data): Proyeccion
 export function hasF572Data(f: F572Data): boolean {
   return Object.values(f.indumentaria).some(v => v > 0) ||
          Object.values(f.cuota_medica).some(v => v > 0);
+}
+
+export function calcularDiferencia(
+  rawA: PayslipData,
+  rawB: PayslipData,
+  f572A: F572Data,
+  f572B: F572Data,
+): DiferenciaAnalisis {
+  const [mesA, mesB, , fb] = rawA.meses <= rawB.meses
+    ? [rawA, rawB, f572A, f572B]
+    : [rawB, rawA, f572B, f572A];
+
+  const delta_retencion_mes = mesB.retencion_mes - mesA.retencion_mes;
+  const delta_bruto_mensual = (mesB.bruto_acumulado / mesB.meses)
+                            - (mesA.bruto_acumulado / mesA.meses);
+  const delta_ded_aplicadas = (mesB.indumentaria_aplicada + mesB.cuota_medica_aplicada)
+                            - (mesA.indumentaria_aplicada + mesA.cuota_medica_aplicada);
+
+  const causa_efecto_acumulativo    = -mesA.retencion_mes;
+  const rate_B                      = buscarTramo(mesB.gnsi).pct;
+  const causa_rectificativa_siradig = hasF572Data(fb)
+                                    ? -(delta_ded_aplicadas * rate_B) || 0
+                                    : 0;
+  const delta_impuesto              = mesB.impuesto_determinado - mesA.impuesto_determinado;
+  const causa_salario               = delta_impuesto - causa_rectificativa_siradig;
+  const causa_bracket               = 0;
+
+  const residuo_inexplicado = delta_retencion_mes
+    - (causa_efecto_acumulativo + causa_rectificativa_siradig + causa_salario + causa_bracket);
+
+  const abs_delta     = Math.abs(delta_retencion_mes);
+  const clasificacion = (abs_delta === 0 || Math.abs(residuo_inexplicado) < 0.1 * abs_delta)
+                      ? 'esperada' as const
+                      : 'revisar' as const;
+
+  return {
+    mesA: mesA.meses,
+    mesB: mesB.meses,
+    delta_retencion_mes,
+    delta_bruto_mensual,
+    delta_ded_aplicadas,
+    causa_efecto_acumulativo,
+    causa_rectificativa_siradig,
+    causa_salario,
+    causa_bracket,
+    residuo_inexplicado,
+    clasificacion,
+  };
 }

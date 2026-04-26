@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RECIBO_MAR, RECIBO_ABR, F572 } from '../data';
-import { calcularGNSI, calcularImpuesto, calcularRetencionMes, calcularGap, proyectarAbril, hasF572Data } from './calculator';
+import { calcularGNSI, calcularImpuesto, calcularRetencionMes, calcularGap, proyectarAbril, hasF572Data, calcularDiferencia } from './calculator';
 
 const TOLERANCE = 100;
 
@@ -130,6 +130,51 @@ describe('hasF572Data (FR-008)', () => {
 
   it('returns true for real F572 fixture', () => {
     expect(hasF572Data(F572)).toBe(true);
+  });
+});
+
+// T002 — calcularDiferencia (TDD: written before implementation)
+describe('calcularDiferencia (spec-009)', () => {
+  const EMPTY_F572 = { conyuge: false, hijos: 0, cuota_medica: {}, indumentaria: {} };
+
+  it('Mar→Apr: delta_retencion_mes ≈ −721,617 ±100', () => {
+    const r = calcularDiferencia(RECIBO_MAR, RECIBO_ABR, F572, F572);
+    expect(Math.abs(r.delta_retencion_mes - (-721_617))).toBeLessThan(100);
+  });
+
+  it('Mar→Apr: |causa_rectificativa_siradig| ≥ 680,000 (SC-001)', () => {
+    const r = calcularDiferencia(RECIBO_MAR, RECIBO_ABR, F572, F572);
+    expect(Math.abs(r.causa_rectificativa_siradig)).toBeGreaterThanOrEqual(680_000);
+  });
+
+  it('Mar→Apr: four causes sum to delta_retencion_mes ±100 (FR-005)', () => {
+    const r = calcularDiferencia(RECIBO_MAR, RECIBO_ABR, F572, F572);
+    const suma = r.causa_efecto_acumulativo + r.causa_rectificativa_siradig
+               + r.causa_salario + r.causa_bracket;
+    expect(Math.abs(r.delta_retencion_mes - suma)).toBeLessThanOrEqual(100);
+  });
+
+  it('Mar→Apr: clasificacion = "esperada"', () => {
+    const r = calcularDiferencia(RECIBO_MAR, RECIBO_ABR, F572, F572);
+    expect(r.clasificacion).toBe('esperada');
+  });
+
+  it('no F.572 data → causa_rectificativa_siradig = 0 (FR-007)', () => {
+    const r = calcularDiferencia(RECIBO_MAR, RECIBO_ABR, EMPTY_F572, EMPTY_F572);
+    expect(r.causa_rectificativa_siradig).toBe(0);
+  });
+
+  it('same month → all deltas = 0 (US2-AC2)', () => {
+    const r = calcularDiferencia(RECIBO_MAR, RECIBO_MAR, F572, F572);
+    expect(r.delta_retencion_mes).toBe(0);
+    expect(r.causa_rectificativa_siradig).toBe(0);
+  });
+
+  it('reversed input order produces same result as normalized (US2-AC3)', () => {
+    const forward  = calcularDiferencia(RECIBO_MAR, RECIBO_ABR, F572, F572);
+    const reversed = calcularDiferencia(RECIBO_ABR, RECIBO_MAR, F572, F572);
+    expect(Math.abs(reversed.delta_retencion_mes - forward.delta_retencion_mes)).toBeLessThan(1);
+    expect(Math.abs(reversed.causa_rectificativa_siradig - forward.causa_rectificativa_siradig)).toBeLessThan(1);
   });
 });
 

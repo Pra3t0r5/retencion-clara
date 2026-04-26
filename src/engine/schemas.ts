@@ -51,6 +51,21 @@ export const GapAnalysis = z.object({
 });
 export type GapAnalysis = z.infer<typeof GapAnalysis>;
 
+export const DiferenciaAnalisis = z.object({
+  mesA: z.number().int().min(1).max(12),
+  mesB: z.number().int().min(1).max(12),
+  delta_retencion_mes:          z.number(),
+  delta_bruto_mensual:          z.number(),
+  delta_ded_aplicadas:          z.number(),
+  causa_efecto_acumulativo:     z.number(),
+  causa_rectificativa_siradig:  z.number(),
+  causa_salario:                z.number(),
+  causa_bracket:                z.number(),
+  residuo_inexplicado:          z.number(),
+  clasificacion:                z.enum(['esperada', 'revisar']),
+});
+export type DiferenciaAnalisis = z.infer<typeof DiferenciaAnalisis>;
+
 export const TaxResult = z.object({
   gnsi:                      z.number(),
   impuesto_determinado:      z.number(),
