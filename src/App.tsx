@@ -117,14 +117,14 @@ function TabResumen({
         <Card title="📋 Deducción no acreditada (F.572)">
           <Row label="Indumentaria declarada" value={$(gaps.indumentaria_declarada)} />
           <Row label="Aplicada en recibo" value={$(gaps.indumentaria_aplicada)} />
-          <Row label="Gap indumentaria" value={$(gaps.indumentaria_gap)} highlight />
+          <Row label="No acreditada" value={$(gaps.indumentaria_gap)} highlight />
           <div className="divider" />
           <Row label="Cuota médica declarada" value={$(gaps.cuota_medica_declarada)} />
           <Row label="Aplicada en recibo" value={$(gaps.cuota_medica_aplicada)} />
-          <Row label="Gap cuota médica" value={$(gaps.cuota_medica_gap)} highlight />
+          <Row label="No acreditada" value={$(gaps.cuota_medica_gap)} highlight />
           <div className="divider" />
           <Row
-            label={`Total gap × ${pct(gaps.tax_rate)}`}
+            label={`Total no acreditado × ${pct(gaps.tax_rate)}`}
             value={`${$(gaps.total_gap)} → ahorra ${$(gaps.ahorro_estimado)}`}
             highlight
           />
@@ -132,7 +132,7 @@ function TabResumen({
       )}
 
       <Card title="📅 Proyección próximo mes">
-        <Row label="Gap retroactivo (rectificativa)" value={$(abril.nuevas_deducciones_ene_mar)} />
+        <Row label="Deducción pendiente (retroactiva)" value={$(abril.nuevas_deducciones_ene_mar)} />
         <Row label="Indumentaria mes siguiente" value={$(abril.nueva_indumentaria_abr)} />
         <Row label="Cuota médica mes siguiente" value={$(abril.nueva_cuota_medica_abr)} />
         <Row label="Total nuevas deducciones" value={$(abril.total_nuevas_deducciones)} highlight />
@@ -197,7 +197,7 @@ function TabF572({
         <div className="divider" />
         <Row label="Total declarado" value={$(cuotaTotal)} highlight />
         <Row label="Aplicado en recibo" value={$(payslip.cuota_medica_aplicada)} />
-        <Row label="Gap" value={$(Math.max(0, cuotaTotal - payslip.cuota_medica_aplicada))} highlight />
+        <Row label="No acreditado" value={$(Math.max(0, cuotaTotal - payslip.cuota_medica_aplicada))} highlight />
       </Card>
 
       <Card title="👔 Indumentaria y Equipamiento">
@@ -208,7 +208,7 @@ function TabF572({
         <div className="divider" />
         <Row label="Total declarado" value={$(indTotal)} highlight />
         <Row label="Aplicado en recibo" value={$(payslip.indumentaria_aplicada)} />
-        <Row label="Gap" value={$(Math.max(0, indTotal - payslip.indumentaria_aplicada))} highlight />
+        <Row label="No acreditado" value={$(Math.max(0, indTotal - payslip.indumentaria_aplicada))} highlight />
       </Card>
     </>
   );
@@ -391,7 +391,7 @@ export default function App() {
                 </div>
                 <div className="welcome-step">
                   <div className="welcome-step-num">3</div>
-                  <div className="welcome-step-text">Analizá el gap y la proyección</div>
+                  <div className="welcome-step-text">Analizá la deducción no acreditada y la proyección</div>
                 </div>
               </div>
               <button className="demo-link" onClick={handleLoadDemo}>
