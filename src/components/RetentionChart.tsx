@@ -34,7 +34,7 @@ function fmtShort(n: number): string {
 
 type TooltipData = { month: string; retencion: number; acumulado: number; x: number };
 
-export function RetentionChart({ data }: { data: ChartPoint[] }) {
+export function RetentionChart({ data, f572Events }: { data: ChartPoint[]; f572Events?: Set<string> }) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
 
   if (data.length === 0) return null;
@@ -123,6 +123,16 @@ export function RetentionChart({ data }: { data: ChartPoint[] }) {
               >
                 {fmtShort(d.retencion)}
               </text>
+              {/* F.572 application annotation */}
+              {f572Events?.has(d.month) && (
+                <text
+                  x={x + barW / 2} y={y - 20}
+                  textAnchor="middle" fontSize={9} fill="#4ade80"
+                  fontWeight="700"
+                >
+                  F.572 ✓
+                </text>
+              )}
               {/* Month label */}
               <text
                 x={cx} y={SVG_H - 8}
@@ -172,12 +182,14 @@ export function RetentionChart({ data }: { data: ChartPoint[] }) {
 
         {/* Hover tooltip */}
         {tooltip && (() => {
+          const isF572Month = f572Events?.has(tooltip.month) ?? false;
+          const tooltipH = isF572Month ? 68 : 52;
           const tx = Math.min(Math.max(tooltip.x - 70, 4), SVG_W - 144);
           const lineY = PAD_T + CHART_H - (yMax > 0 ? (tooltip.acumulado / yMax) * CHART_H : 0);
-          const ty = Math.max(lineY - 56, 4);
+          const ty = Math.max(lineY - (tooltipH + 4), 4);
           return (
             <g>
-              <rect x={tx} y={ty} width={140} height={52} rx={6}
+              <rect x={tx} y={ty} width={140} height={tooltipH} rx={6}
                 fill="#1e293b" stroke="#334155" strokeWidth={1} opacity={0.95}
               />
               <text x={tx + 10} y={ty + 16} fontSize={11} fill="#f1f5f9" fontWeight="600">
@@ -189,6 +201,11 @@ export function RetentionChart({ data }: { data: ChartPoint[] }) {
               <text x={tx + 10} y={ty + 44} fontSize={10} fill={LINE_COLOR}>
                 Acum: {fmtShort(tooltip.acumulado)}
               </text>
+              {isF572Month && (
+                <text x={tx + 10} y={ty + 60} fontSize={9} fill="#4ade80">
+                  F.572 aplicado retroactivamente
+                </text>
+              )}
             </g>
           );
         })()}
@@ -203,14 +220,21 @@ export function RetentionChart({ data }: { data: ChartPoint[] }) {
       {tooltip && (
         <div style={{
           marginTop: 8, padding: "8px 12px", background: "rgba(30,41,59,0.6)",
-          borderRadius: 8, fontSize: 12, display: "flex", gap: 16, justifyContent: "center",
+          borderRadius: 8, fontSize: 12, display: "flex", flexDirection: "column", gap: 4,
         }}>
-          <span style={{ color: BAR_COLOR }}>
-            {tooltip.month} mes: <strong>{$(tooltip.retencion)}</strong>
-          </span>
-          <span style={{ color: LINE_COLOR }}>
-            Acum: <strong>{$(tooltip.acumulado)}</strong>
-          </span>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+            <span style={{ color: BAR_COLOR }}>
+              {tooltip.month} mes: <strong>{$(tooltip.retencion)}</strong>
+            </span>
+            <span style={{ color: LINE_COLOR }}>
+              Acum: <strong>{$(tooltip.acumulado)}</strong>
+            </span>
+          </div>
+          {f572Events?.has(tooltip.month) && (
+            <div style={{ textAlign: "center", color: "#4ade80", fontSize: 11 }}>
+              Tu empleador aplicó el F.572 retroactivamente aquí
+            </div>
+          )}
         </div>
       )}
     </div>

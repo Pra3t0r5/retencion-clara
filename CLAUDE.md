@@ -71,6 +71,8 @@ See AGENTS.md for what agents can/cannot do.
 - localStorage (browser-native; no server) (004-multi-periodo-historicos)
 - TypeScript 5+ strict + React 19 + Zod (schema validation — already in use) (004-multi-periodo-historicos)
 - N/A — no new persistence (comparison is in-session only) (004-multi-periodo-historicos)
+- TypeScript 5+ strict, React 19 + Zod (schema validation — existing), Vitest (tests — existing) (010-dashboard-impacto-f572)
+- `FiscalYearData = Map<number, PayslipData>` in React state + localStorage (no change) (010-dashboard-impacto-f572)
 
 ## Recent Changes
 - feature/001-tax-calculator: Added TypeScript (strict) + React 19

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { RECIBO_MAR, RECIBO_ABR, F572 as F572_DEFAULT } from "./data";
-import { calcularGap, proyectarAbril, proyectarAnual, hasF572Data } from "./engine/calculator";
+import { calcularGap, proyectarAbril, proyectarAnual, hasF572Data, calcularRecuperado, detectarF572Events } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
 import { PayslipData as PayslipSchema, F572Data as F572Schema } from "./engine/schemas";
 import { PayslipForm } from "./components/PayslipForm";
@@ -11,6 +11,7 @@ import { MonthNav } from "./components/MonthNav";
 import { ComparacionSIRADIG } from "./components/ComparacionSIRADIG";
 import { RetentionChart } from "./components/RetentionChart";
 import type { ChartPoint } from "./components/RetentionChart";
+import { HeroStats } from "./components/HeroStats";
 import { LocalStorageAdapter } from "./storage";
 import type { FiscalYearData } from "./storage";
 import "./index.css";
@@ -81,41 +82,35 @@ function EmptyState({
 }
 
 function TabResumen({
-  payslip, f572, chartData,
+  payslip, f572, chartData, recuperado, f572Events,
 }: {
   payslip: PayslipData;
   f572: F572Data;
   chartData: ChartPoint[];
+  recuperado: number;
+  f572Events: Set<string>;
 }) {
   const gaps = calcularGap(payslip, f572, payslip.meses);
   const abril = proyectarAbril(payslip, f572);
   const anual = proyectarAnual(payslip, f572);
-  const totalAhorroAbril = gaps.ahorro_estimado +
-    (abril.nueva_indumentaria_abr + abril.nueva_cuota_medica_abr) * gaps.tax_rate;
 
   return (
     <>
-      <div className="stat-grid">
-        <div className="stat-card danger">
-          <div className="stat-label">Retenido acumulado</div>
-          <div className="stat-value">{$(payslip.retencion_acumulada)}</div>
-          <div className="stat-sub">{$(payslip.retencion_mes)}/mes</div>
-        </div>
-        <div className="stat-card success">
-          <div className="stat-label">Ahorro próx. mes est.</div>
-          <div className="stat-value">{$(totalAhorroAbril)}</div>
-          <div className="stat-sub">por F.572</div>
-        </div>
-      </div>
+      <HeroStats
+        retenido={payslip.retencion_acumulada}
+        recuperado={recuperado}
+        pendiente={gaps.ahorro_estimado}
+        periodoLabel={`Ene–${MES_ABBR[payslip.meses - 1]} ${YEAR}`}
+      />
 
       {chartData.length > 0 && (
         <Card title="📈 Progresión mensual">
-          <RetentionChart data={chartData} />
+          <RetentionChart data={chartData} f572Events={f572Events} />
         </Card>
       )}
 
       {hasF572Data(f572) && (
-        <Card title="📋 Deducción no acreditada (F.572)">
+        <Card title={gaps.total_gap === 0 ? "📋 F.572 — Todo acreditado ✓" : "📋 F.572 — Pendiente de acreditar"}>
           <Row label="Indumentaria declarada" value={$(gaps.indumentaria_declarada)} />
           <Row label="Aplicada en recibo" value={$(gaps.indumentaria_aplicada)} />
           <Row label="No acreditada" value={$(gaps.indumentaria_gap)} highlight />
@@ -124,11 +119,18 @@ function TabResumen({
           <Row label="Aplicada en recibo" value={$(gaps.cuota_medica_aplicada)} />
           <Row label="No acreditada" value={$(gaps.cuota_medica_gap)} highlight />
           <div className="divider" />
-          <Row
-            label={`Total no acreditado × ${pct(gaps.tax_rate)}`}
-            value={`${$(gaps.total_gap)} → ahorra ${$(gaps.ahorro_estimado)}`}
-            highlight
-          />
+          {gaps.total_gap === 0 ? (
+            <>
+              <Row label="Estado" value="Todo acreditado ✓" highlight />
+              <Row label="Ahorro materializado est." value={$(recuperado)} />
+            </>
+          ) : (
+            <Row
+              label={`Total no acreditado × ${pct(gaps.tax_rate)}`}
+              value={`${$(gaps.total_gap)} → ahorra ${$(gaps.ahorro_estimado)}`}
+              highlight
+            />
+          )}
         </Card>
       )}
 
@@ -325,6 +327,9 @@ export default function App() {
   const activePayslip = activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null;
   const activeF572 = f572 ?? EMPTY_F572;
 
+  const recuperado = hasF572Data(activeF572) ? calcularRecuperado(fiscalYear, activeF572) : 0;
+  const f572Events = hasF572Data(activeF572) ? detectarF572Events(fiscalYear, activeF572) : new Set<string>();
+
   const chartData: ChartPoint[] = Array.from(fiscalYear.entries())
     .sort(([a], [b]) => a - b)
     .map(([, p]) => ({
@@ -453,7 +458,7 @@ export default function App() {
     <>
       {activeTab === "resumen" && (
         activePayslip
-          ? <TabResumen payslip={activePayslip} f572={activeF572} chartData={chartData} />
+          ? <TabResumen payslip={activePayslip} f572={activeF572} chartData={chartData} recuperado={recuperado} f572Events={f572Events} />
           : <EmptyState
               icon="📅"
               title="Ningún mes seleccionado"
@@ -502,7 +507,7 @@ export default function App() {
         </div>
         <div className="panel-right">
           {activePayslip
-            ? <TabResumen payslip={activePayslip} f572={activeF572} chartData={chartData} />
+            ? <TabResumen payslip={activePayslip} f572={activeF572} chartData={chartData} recuperado={recuperado} f572Events={f572Events} />
             : <EmptyState
                 icon="📅"
                 title="Ningún mes seleccionado"

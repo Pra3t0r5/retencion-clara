@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RECIBO_MAR, RECIBO_ABR, F572 } from '../data';
-import { calcularGNSI, calcularImpuesto, calcularRetencionMes, calcularGap, proyectarAbril, hasF572Data, calcularDiferencia } from './calculator';
+import { calcularGNSI, calcularImpuesto, calcularRetencionMes, calcularGap, proyectarAbril, hasF572Data, calcularDiferencia, calcularRecuperado, detectarF572Events } from './calculator';
 
 const TOLERANCE = 100;
 
@@ -188,5 +188,47 @@ describe('calcularGap edge cases', () => {
     const gap = calcularGap(RECIBO_MAR, noGapF572, 1);
     expect(gap.total_gap).toBe(0);
     expect(gap.ahorro_estimado).toBe(0);
+  });
+});
+
+// T001 (spec-010) — TDD: written BEFORE implementation of calcularRecuperado / detectarF572Events
+describe('calcularRecuperado (spec-010)', () => {
+  const EMPTY_F572_010 = { conyuge: false, hijos: 0, cuota_medica: {}, indumentaria: {} };
+
+  it('returns ahorro_estimado of March when Mar gap >0 and Apr gap ~0', () => {
+    const fy = new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]);
+    const result = calcularRecuperado(fy, F572);
+    expect(result).toBeGreaterThan(339_180);
+    expect(result).toBeLessThan(340_180);
+  });
+
+  it('returns 0 when fiscal year has only one month', () => {
+    const fy = new Map([[3, RECIBO_MAR]]);
+    expect(calcularRecuperado(fy, F572)).toBe(0);
+  });
+
+  it('returns 0 when gap is 0 in all months (no F572 data)', () => {
+    const fy = new Map([[3, RECIBO_MAR]]);
+    expect(calcularRecuperado(fy, EMPTY_F572_010)).toBe(0);
+  });
+});
+
+describe('detectarF572Events (spec-010)', () => {
+  const EMPTY_F572_010 = { conyuge: false, hijos: 0, cuota_medica: {}, indumentaria: {} };
+
+  it('returns Set containing "Abr" when gap drops from >100K to ~0 between Mar and Abr', () => {
+    const fy = new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]);
+    const result = detectarF572Events(fy, F572);
+    expect(result.has('Abr')).toBe(true);
+  });
+
+  it('returns empty Set when fiscal year has only one month', () => {
+    const fy = new Map([[3, RECIBO_MAR]]);
+    expect(detectarF572Events(fy, F572).size).toBe(0);
+  });
+
+  it('returns empty Set when gap never exceeds 100K (no F572 data)', () => {
+    const fy = new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]);
+    expect(detectarF572Events(fy, EMPTY_F572_010).size).toBe(0);
   });
 });

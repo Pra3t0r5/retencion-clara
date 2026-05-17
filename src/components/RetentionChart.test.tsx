@@ -85,4 +85,18 @@ describe('RetentionChart', () => {
     const rects = container.querySelector('svg')!.querySelectorAll('rect');
     expect(rects.length).toBe(12);
   });
+
+  // T007 (spec-010) — TDD: written before f572Events prop implementation
+  it('T007 renders F.572 ✓ annotation text for months in f572Events', () => {
+    render(
+      <RetentionChart
+        data={[
+          { month: 'Mar', retencion: 1_220_274, acumulado: 3_549_634 },
+          { month: 'Abr', retencion: 498_657,   acumulado: 4_048_291 },
+        ]}
+        f572Events={new Set(['Abr'])}
+      />
+    );
+    expect(screen.getByText('F.572 ✓')).toBeTruthy();
+  });
 });

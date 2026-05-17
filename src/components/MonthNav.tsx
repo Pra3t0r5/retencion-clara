@@ -67,7 +67,7 @@ export function MonthNav({ months, active, onSelect, onAddMonth, onComparar }: P
             marginLeft: 4,
           }}
         >
-          Comparar →
+          ¿Por qué cambió mi retención? →
         </button>
       )}
     </div>
