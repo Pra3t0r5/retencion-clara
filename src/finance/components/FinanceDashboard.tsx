@@ -58,7 +58,15 @@ export function FinanceDashboard() {
 
       {subTab === 'ingresos'   && <IncomeCurveView overrides={incomeOverrides} />}
       {subTab === 'flujo'      && <CashFlowView transactions={transactions} onImport={handleImport} />}
-      {subTab === 'patrimonio' && <NetWorthView snapshots={snapshots} />}
+      {subTab === 'patrimonio' && (
+        <NetWorthView
+          snapshots={snapshots}
+          onAdd={snap => {
+            financeDB.addNetWorthSnapshot(snap);
+            setSnapshots(financeDB.load().netWorthSnapshots);
+          }}
+        />
+      )}
     </div>
   );
 }
