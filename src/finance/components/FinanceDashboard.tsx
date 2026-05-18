@@ -7,10 +7,10 @@ import { NetWorthView } from './NetWorthView';
 
 type SubTab = 'ingresos' | 'flujo' | 'patrimonio';
 
-const SUB_TABS: { id: SubTab; label: string }[] = [
-  { id: 'ingresos',   label: 'Ingresos' },
-  { id: 'flujo',      label: 'Flujo' },
-  { id: 'patrimonio', label: 'Patrimonio' },
+const SUB_TABS: { id: SubTab; label: string; desc: string }[] = [
+  { id: 'ingresos',   label: 'Ingresos',   desc: 'Curva de sueldo desde May 2022' },
+  { id: 'flujo',      label: 'Gastos',     desc: 'Flujo mensual — importá el CSV del FRP' },
+  { id: 'patrimonio', label: 'Patrimonio', desc: 'Activos y pasivos' },
 ];
 
 export function FinanceDashboard() {
@@ -34,41 +34,31 @@ export function FinanceDashboard() {
     });
   }
 
+  const active = SUB_TABS.find(t => t.id === subTab)!;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Sub-tab navigation */}
-      <div style={{ display: 'flex', gap: 4 }}>
+      {/* Sub-nav — reuse existing .tabs / .tab classes */}
+      <div className="tabs" style={{ marginBottom: 0 }}>
         {SUB_TABS.map(t => (
           <button
             key={t.id}
+            className={`tab${subTab === t.id ? ' active' : ''}`}
             onClick={() => setSubTab(t.id)}
-            style={{
-              flex: 1,
-              padding: '8px 4px',
-              border: 'none',
-              borderRadius: 6,
-              cursor: 'pointer',
-              background: subTab === t.id ? 'var(--color-accent)' : 'var(--color-surface-2)',
-              color: subTab === t.id ? '#000' : 'var(--color-muted)',
-              fontWeight: subTab === t.id ? 700 : 400,
-              fontSize: 13,
-            }}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      {subTab === 'ingresos' && (
-        <IncomeCurveView overrides={incomeOverrides} />
-      )}
-      {subTab === 'flujo' && (
-        <CashFlowView transactions={transactions} onImport={handleImport} />
-      )}
-      {subTab === 'patrimonio' && (
-        <NetWorthView snapshots={snapshots} />
-      )}
+      {/* Context line */}
+      <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+        {active.desc}
+      </p>
+
+      {subTab === 'ingresos'   && <IncomeCurveView overrides={incomeOverrides} />}
+      {subTab === 'flujo'      && <CashFlowView transactions={transactions} onImport={handleImport} />}
+      {subTab === 'patrimonio' && <NetWorthView snapshots={snapshots} />}
     </div>
   );
 }

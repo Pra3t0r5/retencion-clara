@@ -14,94 +14,105 @@ function getAssetRows(s: NetWorthSnapshot): AssetRow[] {
   const { assets: a, liabilities: l } = s;
   const arsToUSD = (ars: number) => l.tcForARS > 0 ? ars / l.tcForARS : 0;
   return [
-    { label: 'Efectivo físico USD',   usd: a.cashPhysicalUSD,  color: '#34d399' },
-    { label: 'Santander USD',         usd: a.cashSantanderUSD, color: '#60a5fa' },
-    { label: 'Santander ARS',         usd: arsToUSD(a.cashSantanderARS), color: '#93c5fd' },
-    { label: 'Balanz FCI USD',        usd: a.balanzUSD,        color: '#a78bfa' },
-    { label: 'Finzo (bolsa)',         usd: a.finzoUSD,         color: '#fb923c' },
-    { label: 'Cripto',                usd: a.cryptoUSD,        color: '#fbbf24' },
-    { label: 'Otros (billetes)',      usd: a.otherUSD,         color: '#94a3b8' },
+    { label: 'Efectivo físico USD',  usd: a.cashPhysicalUSD,       color: '#16a34a' },
+    { label: 'Santander USD',        usd: a.cashSantanderUSD,      color: '#2563eb' },
+    { label: 'Santander ARS',        usd: arsToUSD(a.cashSantanderARS), color: '#60a5fa' },
+    { label: 'Balanz FCI USD',       usd: a.balanzUSD,             color: '#7c3aed' },
+    { label: 'Finzo (bolsa)',        usd: a.finzoUSD,              color: '#d97706' },
+    { label: 'Cripto',               usd: a.cryptoUSD,             color: '#f59e0b' },
+    { label: 'Otros billetes',       usd: a.otherUSD,              color: '#94a3b8' },
   ].filter(r => r.usd > 0);
 }
 
-const SVG_SIZE = 140;
-const CX = SVG_SIZE / 2;
-const CY = SVG_SIZE / 2;
-const R_OUTER = 56;
-const R_INNER = 32;
+const SZ = 140;
+const CX = SZ / 2;
+const CY = SZ / 2;
+const RO = 56;
+const RI = 32;
 
 function DonutChart({ rows, total }: { rows: AssetRow[]; total: number }) {
   if (total === 0) return null;
-  let cumAngle = -Math.PI / 2;
+  let cumA = -Math.PI / 2;
+
   const slices = rows.map(r => {
-    const pct = r.usd / total;
-    const startA = cumAngle;
-    const endA   = cumAngle + pct * 2 * Math.PI;
-    cumAngle = endA;
-    const x1 = CX + R_OUTER * Math.cos(startA);
-    const y1 = CY + R_OUTER * Math.sin(startA);
-    const x2 = CX + R_OUTER * Math.cos(endA);
-    const y2 = CY + R_OUTER * Math.sin(endA);
-    const xi1 = CX + R_INNER * Math.cos(endA);
-    const yi1 = CY + R_INNER * Math.sin(endA);
-    const xi2 = CX + R_INNER * Math.cos(startA);
-    const yi2 = CY + R_INNER * Math.sin(startA);
-    const large = pct > 0.5 ? 1 : 0;
-    const path = `M ${x1} ${y1} A ${R_OUTER} ${R_OUTER} 0 ${large} 1 ${x2} ${y2} L ${xi1} ${yi1} A ${R_INNER} ${R_INNER} 0 ${large} 0 ${xi2} ${yi2} Z`;
-    return { ...r, path, pct };
+    const pct  = r.usd / total;
+    const sa   = cumA;
+    const ea   = cumA + pct * 2 * Math.PI;
+    cumA = ea;
+    const x1 = CX + RO * Math.cos(sa), y1 = CY + RO * Math.sin(sa);
+    const x2 = CX + RO * Math.cos(ea), y2 = CY + RO * Math.sin(ea);
+    const xi1 = CX + RI * Math.cos(ea), yi1 = CY + RI * Math.sin(ea);
+    const xi2 = CX + RI * Math.cos(sa), yi2 = CY + RI * Math.sin(sa);
+    const lg = pct > 0.5 ? 1 : 0;
+    return {
+      ...r, pct,
+      path: `M ${x1} ${y1} A ${RO} ${RO} 0 ${lg} 1 ${x2} ${y2} L ${xi1} ${yi1} A ${RI} ${RI} 0 ${lg} 0 ${xi2} ${yi2} Z`,
+    };
   });
 
   return (
-    <svg viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`} style={{ width: SVG_SIZE, height: SVG_SIZE }}>
-      {slices.map(s => (
-        <path key={s.label} d={s.path} fill={s.color} opacity={0.85} />
-      ))}
-      <text x={CX} y={CY - 5} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--color-text)">
-        Activos
-      </text>
-      <text x={CX} y={CY + 9} textAnchor="middle" fontSize={9} fill="var(--color-muted)">
-        {fmtUSD(total)}
-      </text>
+    <svg viewBox={`0 0 ${SZ} ${SZ}`} style={{ width: SZ, height: SZ, flexShrink: 0 }}>
+      {slices.map(s => <path key={s.label} d={s.path} fill={s.color} opacity={0.88} />)}
+      <text x={CX} y={CY - 4} textAnchor="middle" fontSize={9} fontWeight={700}
+        fill="var(--color-text)">Activos</text>
+      <text x={CX} y={CY + 10} textAnchor="middle" fontSize={9}
+        fill="var(--color-text-muted)">{fmtUSD(total)}</text>
     </svg>
   );
 }
 
 export function NetWorthView({ snapshots }: { snapshots: NetWorthSnapshot[] }) {
-  if (snapshots.length === 0) return <p style={{ color: 'var(--color-muted)' }}>Sin snapshots de patrimonio.</p>;
+  if (snapshots.length === 0) {
+    return <p style={{ color: 'var(--color-text-muted)' }}>Sin snapshots de patrimonio.</p>;
+  }
 
-  const snap = snapshots.at(-1)!;
-  const rows = getAssetRows(snap);
-  const totalAssets = rows.reduce((s, r) => s + r.usd, 0);
-  const totalLiabUSD = snap.liabilities.creditCardsUSD +
+  const snap  = snapshots.at(-1)!;
+  const rows  = getAssetRows(snap);
+  const total = rows.reduce((s, r) => s + r.usd, 0);
+  const liabUSD = snap.liabilities.creditCardsUSD +
     (snap.liabilities.creditCardsARS + snap.liabilities.otherARS) / snap.liabilities.tcForARS;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+      {/* Net worth hero */}
+      <div style={{
+        background: 'var(--color-success-bg)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius)',
+        padding: '1rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
+      }}>
         <div>
-          <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>Patrimonio Neto — {snap.date}</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#34d399' }}>{fmtUSD(snap.netWorthUSD)}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+            Patrimonio Neto — {snap.date}
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--color-success)' }}>
+            {fmtUSD(snap.netWorthUSD)}
+          </div>
         </div>
-        <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-          <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>Activos</div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{fmtUSD(totalAssets)}</div>
-          <div style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 4 }}>Pasivos</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#f87171' }}>−{fmtUSD(totalLiabUSD)}</div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>Activos</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)' }}>{fmtUSD(total)}</div>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 4 }}>Pasivos</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-danger)' }}>−{fmtUSD(liabUSD)}</div>
         </div>
       </div>
 
       {/* Donut + asset list */}
       <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <DonutChart rows={rows} total={totalAssets} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
+        <DonutChart rows={rows} total={total} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, minWidth: 180 }}>
           {rows.map(r => (
             <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
-              <span style={{ fontSize: 12, flex: 1, color: 'var(--color-muted)' }}>{r.label}</span>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>{fmtUSD(r.usd)}</span>
-              <span style={{ fontSize: 11, color: 'var(--color-muted)', width: 36, textAlign: 'right' }}>
-                {totalAssets > 0 ? `${((r.usd / totalAssets) * 100).toFixed(0)}%` : ''}
+              <div style={{ width: 9, height: 9, borderRadius: '50%', background: r.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 'var(--text-xs)', flex: 1, color: 'var(--color-text-muted)' }}>{r.label}</span>
+              <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text)' }}>{fmtUSD(r.usd)}</span>
+              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', width: 32, textAlign: 'right' }}>
+                {total > 0 ? `${((r.usd / total) * 100).toFixed(0)}%` : ''}
               </span>
             </div>
           ))}
@@ -109,26 +120,35 @@ export function NetWorthView({ snapshots }: { snapshots: NetWorthSnapshot[] }) {
       </div>
 
       {/* Liabilities */}
-      <div>
-        <h4 style={{ margin: '0 0 0.5rem', fontSize: 13, color: 'var(--color-muted)' }}>Pasivos</h4>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+      <div style={{
+        background: 'var(--color-danger-bg)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius)',
+        padding: '0.75rem',
+      }}>
+        <p style={{ margin: '0 0 0.5rem', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+          Pasivos
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 'var(--text-xs)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--color-muted)' }}>Tarjetas ARS</span>
-            <span style={{ color: '#f87171' }}>{fmtARS(snap.liabilities.creditCardsARS)}</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>Tarjetas ARS</span>
+            <span style={{ color: 'var(--color-danger)' }}>{fmtARS(snap.liabilities.creditCardsARS)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--color-muted)' }}>Tarjetas USD</span>
-            <span style={{ color: '#f87171' }}>{fmtUSD(snap.liabilities.creditCardsUSD)}</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>Tarjetas USD</span>
+            <span style={{ color: 'var(--color-danger)' }}>{fmtUSD(snap.liabilities.creditCardsUSD)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--color-border)', paddingTop: 4 }}>
-            <span style={{ color: 'var(--color-muted)' }}>Total pasivos (equiv USD)</span>
-            <span style={{ color: '#f87171', fontWeight: 700 }}>{fmtUSD(totalLiabUSD)}</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>Total equiv USD</span>
+            <span style={{ color: 'var(--color-danger)', fontWeight: 700 }}>{fmtUSD(liabUSD)}</span>
           </div>
         </div>
       </div>
 
       {snap.notes && (
-        <p style={{ fontSize: 11, color: 'var(--color-muted)', margin: 0, fontStyle: 'italic' }}>{snap.notes}</p>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-subtle)', margin: 0, fontStyle: 'italic' }}>
+          {snap.notes}
+        </p>
       )}
     </div>
   );
