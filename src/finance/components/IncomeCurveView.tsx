@@ -12,11 +12,12 @@ const MODALITY_COLOR: Record<string, string> = {
   'manual':        '#64748b',
 };
 
-type Metric = 'nominalUSD' | 'realUSD' | 'canastas';
+type Metric = 'nominalUSD' | 'realUSD' | 'realARS' | 'canastas';
 
 const METRIC_LABELS: Record<Metric, string> = {
   nominalUSD: 'USD nominal',
-  realUSD:    'USD real (base ene 2022)',
+  realUSD:    'USD real (CPI-USA, base ene 2022)',
+  realARS:    'ARS real (IPC INDEC, base ene 2022)',
   canastas:   'Canastas básicas/mes',
 };
 
@@ -60,7 +61,11 @@ export function IncomeCurveView({ overrides }: { overrides: IncomeEntry[] }) {
     const val = maxVal * f;
     return {
       y: PAD_T + CHART_H - f * CHART_H,
-      label: metric === 'canastas' ? val.toFixed(1) : `$${Math.round(val / 1000)}k`,
+      label: metric === 'canastas'
+        ? val.toFixed(1)
+        : metric === 'realARS'
+          ? `$${Math.round(val / 1_000_000)}M`
+          : `$${Math.round(val / 1000)}k`,
     };
   });
 
@@ -136,10 +141,10 @@ export function IncomeCurveView({ overrides }: { overrides: IncomeEntry[] }) {
           {/* Tooltip */}
           {tooltip && (() => {
             const tx = Math.min(Math.max(tooltip.x - 75, PAD_L), SVG_W - 160);
-            const ty = Math.max(tooltip.y - 72, PAD_T);
+            const ty = Math.max(tooltip.y - 84, PAD_T);
             return (
               <g>
-                <rect x={tx} y={ty} width={155} height={68} rx={4}
+                <rect x={tx} y={ty} width={165} height={80} rx={4}
                   fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth={1} />
                 <text x={tx + 8} y={ty + 16} fontSize={10} fontWeight={700}
                   fill="var(--color-text)">{tooltip.pt.yearMonth}</text>
@@ -151,7 +156,10 @@ export function IncomeCurveView({ overrides }: { overrides: IncomeEntry[] }) {
                   {`Nominal: ${fmtUSD(tooltip.pt.nominalUSD)}`}
                 </text>
                 <text x={tx + 8} y={ty + 58} fontSize={9} fill="var(--color-text-muted)">
-                  {`Real: ${fmtUSD(tooltip.pt.realUSD)} | CBs: ${tooltip.pt.canastas.toFixed(2)}`}
+                  {`Real USD: ${fmtUSD(tooltip.pt.realUSD)} | CBs: ${tooltip.pt.canastas.toFixed(2)}`}
+                </text>
+                <text x={tx + 8} y={ty + 70} fontSize={9} fill="var(--color-text-muted)">
+                  {`ARS real: $${Math.round(tooltip.pt.realARS / 1000).toLocaleString('es-AR')}k`}
                 </text>
               </g>
             );
@@ -176,7 +184,7 @@ export function IncomeCurveView({ overrides }: { overrides: IncomeEntry[] }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-xs)' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-              {['Período', 'Modalidad', 'USD nominal', 'USD real', 'Canastas'].map(h => (
+              {['Período', 'Modalidad', 'USD nominal', 'USD real (CPI-USA)', 'ARS real (IPC)', 'Canastas'].map(h => (
                 <th key={h} style={{
                   padding: '6px 8px', textAlign: 'right',
                   color: 'var(--color-text-muted)', fontWeight: 500,
@@ -201,6 +209,9 @@ export function IncomeCurveView({ overrides }: { overrides: IncomeEntry[] }) {
                 </td>
                 <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--color-text-muted)' }}>
                   {fmtUSD(p.realUSD)}
+                </td>
+                <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--color-text-muted)' }}>
+                  {`$${Math.round(p.realARS / 1000).toLocaleString('es-AR')}k`}
                 </td>
                 <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--color-text-muted)' }}>
                   {p.canastas.toFixed(2)}

@@ -36,7 +36,7 @@ export const INCOME_SEED: IncomeEntry[] = [
 
   // 2024 — transición a cláusula USD en marzo
   { year: 2024, month: 1,  netUSD: 2574, grossARS: 4_080_214.87, netARS: 3_205_392.13, taxARS:  874_822.74, tcMEP: null, tcCCL: 1245, modality: 'crehana-ars' },
-  { year: 2024, month: 2,  netUSD: 2429, grossARS: 4_255_985.93, netARS: 2_636_307.60, taxARS: 1_619_678.33, tcMEP: null, tcCCL: 1085, modality: 'crehana-ars' },
+  { year: 2024, month: 2,  netUSD: 5029, grossARS: 4_255_985.93, netARS: 2_636_307.60, taxARS: 1_619_678.33, tcMEP: null, tcCCL: 1085, modality: 'crehana-split', notes: 'Split pay: componente ARS + USD; Capital Real Salarios Simplificado $5,029' },
   // Mar 2024: SPLIT PAY — $1,721,990 ARS + $2,978 USD en cuenta.
   // Capital Real (Salarios Simplificado, CCL 979): $1,721,990/979 + $2,978 = $4,737 USD
   { year: 2024, month: 3,  netUSD: 4737, grossARS: 4_845_286.69, netARS: 4_304_974.63, taxARS:  540_312.06, tcMEP: null, tcCCL: 979, modality: 'crehana-split', notes: 'Split pay: $1,721,990 ARS (÷979 CCL) + $2,978 USD = $4,737' },

@@ -83,7 +83,8 @@ export type MonthlyFlow = z.infer<typeof MonthlyFlow>;
 export const PowerPoint = z.object({
   yearMonth:     z.string(),
   nominalUSD:    z.number(),
-  realUSD:       z.number(),   // CPI-adjusted, 2022 base
+  realUSD:       z.number(),   // CPI-US-adjusted, Jan-2022 USD base
+  realARS:       z.number(),   // netUSD*tcMEP deflated by INDEC IPC, Jan-2022 ARS base
   canastas:      z.number(),   // how many CBT (4p) covered
   modality:      PaymentModality,
 });

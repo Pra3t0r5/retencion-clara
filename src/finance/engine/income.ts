@@ -2,6 +2,7 @@ import type { IncomeEntry, PowerPoint } from './schemas';
 import { INCOME_SEED } from './income-seed';
 import { getRealUSD } from '../tablas/cpi-us';
 import { getCanastas } from '../tablas/cbt-indec';
+import { getIPCIndex } from '../tablas/ipc-indec';
 
 export function toYearMonth(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
@@ -47,10 +48,13 @@ export function buildPowerCurve(overrides: IncomeEntry[]): PowerPoint[] {
     .map(e => {
       const ym = toYearMonth(e.year, e.month);
       const tc = resolveTCMEP(e);
+      const nominalARS = e.netUSD * tc;
+      const ipcIdx     = getIPCIndex(ym);
       return {
         yearMonth:  ym,
         nominalUSD: e.netUSD,
         realUSD:    getRealUSD(e.netUSD, ym),
+        realARS:    ipcIdx > 0 ? (nominalARS / ipcIdx) * 100 : nominalARS,
         canastas:   getCanastas(e.netUSD, tc, ym),
         modality:   e.modality,
       };
