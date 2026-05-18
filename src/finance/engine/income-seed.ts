@@ -1,9 +1,11 @@
 import type { IncomeEntry } from './schemas';
 
-// Seeded from: Cuentas Casa(2).xlsx > "Salarios Fer" + "Salarios Simplificado"
-// Source: Fernando Daniel Albertengo — income history May 2022 → Feb 2025
+// Seeded from: Cuentas Casa.xlsx (Sep 2025) > "Salarios Fer" + "Salarios Simplificado"
+// Source: Fernando Daniel Albertengo — income history May 2022 → Aug 2025
 // Gap 2018–Apr 2022: no data available.
-// Subsequent months (Mar 2025+) imported from Deel PDFs via FRP / manual entry.
+// Authoritative source priority: Salarios Simplificado Capital Real > Santander bank statement > Salarios Fer Neto USD
+// NOTE: Jun 2023–Jan 2024 crehana-ars era has INCOMPLETE data — Salarios Fer only captured ARS component.
+// User confirmed USD deposits also existed; 2023 Santander statements needed to complete those months.
 
 export const INCOME_SEED: IncomeEntry[] = [
   // === CONTRACTOR era (USD invoices INV-2022 / INV-2023) ===
@@ -43,31 +45,31 @@ export const INCOME_SEED: IncomeEntry[] = [
   { year: 2024, month: 4,  netUSD: 3919, grossARS: 4_634_579.63, netARS: 3_427_498.89, taxARS: 1_207_080.74, tcMEP: 1055, tcCCL: null, modality: 'crehana-usd', notes: 'USD directo, sin componente ARS' },
   { year: 2024, month: 5,  netUSD: 3866, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1159, tcCCL: null, modality: 'crehana-usd', notes: 'Acreditacion haberes Santander USD 24/05/24; Salarios Simplificado confirma $3,866' },
   { year: 2024, month: 6,  netUSD: 6212, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1309, tcCCL: null, modality: 'crehana-usd', notes: 'Incluye aguinaldo junio; Salarios Simplificado $6,212.51' },
-  { year: 2024, month: 7,  netUSD: 4557, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1327, tcCCL: null, modality: 'crehana-usd', notes: 'Aguinaldo + sueldo' },
+  { year: 2024, month: 7,  netUSD: 4557, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1327, tcCCL: null, modality: 'crehana-usd' },
   { year: 2024, month: 8,  netUSD: 4271, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1270, tcCCL: null, modality: 'crehana-usd' },
   { year: 2024, month: 9,  netUSD: 3295, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1185, tcCCL: null, modality: 'crehana-usd' },
   { year: 2024, month: 10, netUSD: 5010, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1135, tcCCL: null, modality: 'crehana-usd', notes: 'Bono o aguinaldo extra' },
   { year: 2024, month: 11, netUSD: 4499, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1074, tcCCL: null, modality: 'crehana-usd' },
   { year: 2024, month: 12, netUSD: 7601, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1150, tcCCL: null, modality: 'crehana-usd', notes: 'Aguinaldo diciembre' },
 
-  // 2025 — Jan/Feb from Cuentas Casa (Salarios Simplificado)
+  // 2025 — from Cuentas Casa.xlsx (Sep 2025) Salarios Simplificado Capital Real
   { year: 2025, month: 1, netUSD: 3967, grossARS: null, netARS: null, taxARS: null, tcMEP: 1163, tcCCL: null, modality: 'crehana-usd' },
-  { year: 2025, month: 2, netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: 1220, tcCCL: null, modality: 'crehana-usd', notes: 'Estimado — Feb 2025 en Cuentas Casa sin monto preciso' },
+  { year: 2025, month: 2, netUSD: 4141, grossARS: null, netARS: null, taxARS: null, tcMEP: 1220, tcCCL: null, modality: 'crehana-usd' },
 
-  // Mar 2025+: Deel era — Deel payslips disponibles, $4,200 USD fijo
-  // Estos se cargan via import o manual override; acá van como defaults
-  { year: 2025, month: 3,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 4,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 5,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 6,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 7,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 8,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 9,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 10, netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 11, netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2025, month: 12, netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Incluye aguinaldo diciembre' },
-  { year: 2026, month: 1,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2026, month: 2,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2026, month: 3,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
-  { year: 2026, month: 4,  netUSD: 4200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
+  // Mar 2025+: Deel era — Capital Real from Salarios Simplificado (Sep 2025 version)
+  { year: 2025, month: 3,  netUSD: 4220, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
+  { year: 2025, month: 4,  netUSD: 4110, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
+  { year: 2025, month: 5,  netUSD: 3985, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
+  { year: 2025, month: 6,  netUSD: 6336, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Incluye aguinaldo junio' },
+  { year: 2025, month: 7,  netUSD: 3938, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
+  { year: 2025, month: 8,  netUSD: 4122, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel' },
+  // Sep 2025+: Salarios Simplificado #REF — estimado hasta nuevo dato
+  { year: 2025, month: 9,  netUSD: 4100, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado — sin dato en Salarios Simplificado' },
+  { year: 2025, month: 10, netUSD: 4100, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado' },
+  { year: 2025, month: 11, netUSD: 4100, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado' },
+  { year: 2025, month: 12, netUSD: 8200, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado — incluye aguinaldo diciembre' },
+  { year: 2026, month: 1,  netUSD: 4100, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado' },
+  { year: 2026, month: 2,  netUSD: 4100, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado' },
+  { year: 2026, month: 3,  netUSD: 4100, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado' },
+  { year: 2026, month: 4,  netUSD: 4100, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Estimado' },
 ];
