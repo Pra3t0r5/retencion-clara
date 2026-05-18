@@ -41,8 +41,8 @@ export const INCOME_SEED: IncomeEntry[] = [
   // Capital Real (Salarios Simplificado, CCL 979): $1,721,990/979 + $2,978 = $4,737 USD
   { year: 2024, month: 3,  netUSD: 4737, grossARS: 4_845_286.69, netARS: 4_304_974.63, taxARS:  540_312.06, tcMEP: null, tcCCL: 979, modality: 'crehana-split', notes: 'Split pay: $1,721,990 ARS (÷979 CCL) + $2,978 USD = $4,737' },
   { year: 2024, month: 4,  netUSD: 3919, grossARS: 4_634_579.63, netARS: 3_427_498.89, taxARS: 1_207_080.74, tcMEP: 1055, tcCCL: null, modality: 'crehana-usd', notes: 'USD directo, sin componente ARS' },
-  { year: 2024, month: 5,  netUSD: 2879, grossARS: null,          netARS: 3_455_877,    taxARS: 1_280_935.19, tcMEP: 1200, tcCCL: null, modality: 'crehana-usd', notes: 'MEP estimado' },
-  { year: 2024, month: 6,  netUSD: 3866, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1309, tcCCL: null, modality: 'crehana-usd', notes: 'Incluye aguinaldo' },
+  { year: 2024, month: 5,  netUSD: 3866, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1159, tcCCL: null, modality: 'crehana-usd', notes: 'Acreditacion haberes Santander USD 24/05/24; Salarios Simplificado confirma $3,866' },
+  { year: 2024, month: 6,  netUSD: 6212, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1309, tcCCL: null, modality: 'crehana-usd', notes: 'Incluye aguinaldo junio; Salarios Simplificado $6,212.51' },
   { year: 2024, month: 7,  netUSD: 4557, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1327, tcCCL: null, modality: 'crehana-usd', notes: 'Aguinaldo + sueldo' },
   { year: 2024, month: 8,  netUSD: 4271, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1270, tcCCL: null, modality: 'crehana-usd' },
   { year: 2024, month: 9,  netUSD: 3295, grossARS: null,          netARS: null,          taxARS: null,         tcMEP: 1185, tcCCL: null, modality: 'crehana-usd' },
