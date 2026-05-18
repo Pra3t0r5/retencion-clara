@@ -14,6 +14,7 @@ import type { ChartPoint } from "./components/RetentionChart";
 import { HeroStats } from "./components/HeroStats";
 import { LocalStorageAdapter } from "./storage";
 import type { FiscalYearData } from "./storage";
+import { FinanceDashboard } from "./finance/components/FinanceDashboard";
 import "./index.css";
 
 const YEAR = 2026;
@@ -301,9 +302,10 @@ function UploadForms({
 }
 
 const TABS = [
-  { id: "resumen", label: "Resumen", className: "tab--resumen" },
-  { id: "f572",    label: "F.572",   className: "" },
-  { id: "datos",   label: "✏️ Datos", className: "" },
+  { id: "resumen",  label: "Resumen",    className: "tab--resumen" },
+  { id: "f572",     label: "F.572",      className: "" },
+  { id: "datos",    label: "✏️ Datos",   className: "" },
+  { id: "finanzas", label: "$ Finanzas", className: "tab--finanzas" },
 ];
 
 export default function App() {
@@ -484,6 +486,7 @@ export default function App() {
           onF572Change={handleF572Change}
         />
       )}
+      {activeTab === "finanzas" && <FinanceDashboard />}
     </>
   );
 
