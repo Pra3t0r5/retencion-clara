@@ -4,11 +4,12 @@ import { buildPowerCurve, getModalityLabel } from '../engine/income';
 import type { PowerPoint } from '../engine/schemas';
 
 const MODALITY_COLOR: Record<string, string> = {
-  'contractor':  '#a78bfa',
-  'crehana-ars': '#fb923c',
-  'crehana-usd': '#16a34a',
-  'deel':        '#2563eb',
-  'manual':      '#64748b',
+  'contractor':    '#a78bfa',
+  'crehana-ars':   '#fb923c',
+  'crehana-split': '#fbbf24',  // amarillo — transición ARS+USD
+  'crehana-usd':   '#16a34a',
+  'deel':          '#2563eb',
+  'manual':        '#64748b',
 };
 
 type Metric = 'nominalUSD' | 'realUSD' | 'canastas';

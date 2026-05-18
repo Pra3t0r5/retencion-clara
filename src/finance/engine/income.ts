@@ -59,10 +59,11 @@ export function buildPowerCurve(overrides: IncomeEntry[]): PowerPoint[] {
 
 export function getModalityLabel(m: IncomeEntry['modality']): string {
   switch (m) {
-    case 'contractor':   return 'Contractor';
-    case 'crehana-ars':  return 'Crehana ARS';
-    case 'crehana-usd':  return 'Crehana USD';
-    case 'deel':         return 'Crehana / Deel';
-    case 'manual':       return 'Manual';
+    case 'contractor':    return 'Contractor';
+    case 'crehana-ars':   return 'Crehana ARS';
+    case 'crehana-split': return 'Crehana ARS+USD';
+    case 'crehana-usd':   return 'Crehana USD';
+    case 'deel':          return 'Crehana / Deel';
+    case 'manual':        return 'Manual';
   }
 }

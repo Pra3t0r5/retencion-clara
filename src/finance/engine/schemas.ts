@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
 export const PaymentModality = z.enum([
-  'contractor',    // USD invoices, no social security
-  'crehana-ars',   // ARS dependency, tracked at CCL
-  'crehana-usd',   // USD clause, Santander direct
-  'deel',          // USD via Deel platform
+  'contractor',      // USD invoices, no social security
+  'crehana-ars',     // ARS dependency, tracked at CCL
+  'crehana-split',   // transition: ARS component + USD component same month, summed at TC
+  'crehana-usd',     // USD clause, Santander direct (full USD)
+  'deel',            // USD via Deel platform
   'manual',
 ]);
 export type PaymentModality = z.infer<typeof PaymentModality>;
