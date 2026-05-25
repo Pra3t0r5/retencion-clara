@@ -18,7 +18,8 @@ function fmtUSD(n: number) {
 }
 
 function MonthlyBarChart({ flows }: { flows: MonthlyFlow[] }) {
-  const [tooltip, setTooltip] = useState<{ x: number; flow: MonthlyFlow } | null>(null);
+  const [tooltip, setTooltip] = useState<{ mx: number; my: number; flow: MonthlyFlow } | null>(null);
+  const [expanded, setExpanded] = useState(false);
   if (flows.length === 0) return null;
 
   const maxVal = Math.max(...flows.map(f => Math.max(f.incomeUSD, f.expensesUSD))) * 1.12 || 1;
@@ -30,9 +31,38 @@ function MonthlyBarChart({ flows }: { flows: MonthlyFlow[] }) {
     label: `$${Math.round(maxVal * f / 1000)}k`,
   }));
 
-  return (
-    <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '0.75rem', overflowX: 'auto' }}>
-      <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} style={{ width: '100%', maxWidth: SVG_W, display: 'block' }}>
+  const chart = (
+    <div style={{
+      position: 'relative',
+      background: 'var(--color-surface)',
+      border: '1px solid var(--color-border)',
+      borderRadius: 'var(--radius)',
+      padding: '0.75rem',
+      overflowX: 'auto',
+      flex: expanded ? 1 : undefined,
+    }}>
+      {!expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          title="Pantalla completa"
+          style={{
+            position: 'absolute', top: 8, right: 8, zIndex: 1,
+            padding: '3px 8px', fontSize: 11, cursor: 'pointer',
+            borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)',
+            background: 'var(--color-surface)', color: 'var(--color-text-muted)',
+            lineHeight: 1,
+          }}
+        >⛶</button>
+      )}
+
+      <svg
+        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+        style={{ width: '100%', maxWidth: expanded ? '100%' : SVG_W, display: 'block' }}
+        onMouseLeave={() => setTooltip(null)}
+        onMouseMove={e => {
+          if (tooltip) setTooltip(t => t ? { ...t, mx: e.clientX, my: e.clientY } : null);
+        }}
+      >
         {yTicks.map((t, i) => (
           <g key={i}>
             <line x1={PAD_L} x2={SVG_W - PAD_R} y1={t.y} y2={t.y}
@@ -49,10 +79,7 @@ function MonthlyBarChart({ flows }: { flows: MonthlyFlow[] }) {
           const expH  = (flow.expensesUSD / maxVal) * CHART_H;
 
           return (
-            <g key={flow.yearMonth}
-              onMouseEnter={() => setTooltip({ x: cx, flow })}
-              onMouseLeave={() => setTooltip(null)}
-              style={{ cursor: 'pointer' }}>
+            <g key={flow.yearMonth} style={{ pointerEvents: 'none' }}>
               <rect x={cx - barW - 1} y={baseY - incH} width={barW} height={incH}
                 fill="var(--color-success)" opacity={0.75} rx={2} />
               <rect x={cx + 1} y={baseY - expH} width={barW} height={expH}
@@ -65,32 +92,19 @@ function MonthlyBarChart({ flows }: { flows: MonthlyFlow[] }) {
           );
         })}
 
-        {tooltip && (() => {
-          const tx = Math.min(Math.max(tooltip.x - 80, PAD_L), SVG_W - 168);
-          const ty = PAD_T + 4;
-          const top = topCategories(tooltip.flow, 3);
-          const h   = 50 + top.length * 13;
-          return (
-            <g>
-              <rect x={tx} y={ty} width={164} height={h} rx={4}
-                fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth={1} />
-              <text x={tx + 8} y={ty + 14} fontSize={10} fontWeight={700}
-                fill="var(--color-text)">{tooltip.flow.yearMonth}</text>
-              <text x={tx + 8} y={ty + 27} fontSize={9} fill="var(--color-success)">
-                {`Ing: ${fmtUSD(tooltip.flow.incomeUSD)}`}
-              </text>
-              <text x={tx + 88} y={ty + 27} fontSize={9} fill="var(--color-danger)">
-                {`Eg: ${fmtUSD(tooltip.flow.expensesUSD)}`}
-              </text>
-              {top.map(([cat, val], j) => (
-                <text key={cat} x={tx + 8} y={ty + 40 + j * 13} fontSize={8}
-                  fill="var(--color-text-muted)">
-                  {`${cat}: ${fmtUSD(val)}`}
-                </text>
-              ))}
-            </g>
-          );
-        })()}
+        {/* Invisible hit rects — full column width per bar */}
+        {flows.map((flow, i) => (
+          <rect
+            key={`hit-${i}`}
+            x={PAD_L + slotW * i}
+            y={PAD_T}
+            width={slotW}
+            height={CHART_H}
+            fill="transparent"
+            style={{ cursor: 'pointer' }}
+            onMouseEnter={e => setTooltip({ mx: e.clientX, my: e.clientY, flow })}
+          />
+        ))}
 
         {/* Legend */}
         <rect x={SVG_W - 96} y={PAD_T} width={8} height={8}
@@ -100,8 +114,72 @@ function MonthlyBarChart({ flows }: { flows: MonthlyFlow[] }) {
           fill="var(--color-danger)" opacity={0.75} rx={1} />
         <text x={SVG_W - 85} y={PAD_T + 21} fontSize={9} fill="var(--color-text-muted)">Egreso</text>
       </svg>
+
+      {tooltip && (() => {
+        const top = topCategories(tooltip.flow, 3);
+        return (
+          <div style={{
+            position: 'fixed',
+            left: tooltip.mx + 14,
+            top: tooltip.my - 10,
+            transform: tooltip.mx > window.innerWidth - 220 ? 'translateX(-110%)' : undefined,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '8px 12px',
+            fontSize: 12,
+            minWidth: 180,
+            pointerEvents: 'none',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+            zIndex: 9999,
+            lineHeight: 1.7,
+          }}>
+            <div style={{ fontWeight: 700, marginBottom: 2 }}>{tooltip.flow.yearMonth}</div>
+            <div style={{ color: 'var(--color-success)', fontSize: 11 }}>
+              Ingreso: {fmtUSD(tooltip.flow.incomeUSD)}
+            </div>
+            <div style={{ color: 'var(--color-danger)', fontSize: 11 }}>
+              Egreso: {fmtUSD(tooltip.flow.expensesUSD)}
+            </div>
+            {top.length > 0 && (
+              <div style={{ marginTop: 4, borderTop: '1px solid var(--color-border)', paddingTop: 4 }}>
+                {top.map(([cat, val]) => (
+                  <div key={cat} style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
+                    {cat}: {fmtUSD(val)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
+
+  if (expanded) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 50, background: 'var(--color-bg)',
+        display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem',
+        overflow: 'auto',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+            Flujo mensual — ingresos y egresos
+          </span>
+          <button onClick={() => setExpanded(false)} style={{
+            padding: '4px 12px', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)', cursor: 'pointer',
+            background: 'var(--color-surface)', color: 'var(--color-text)',
+            fontSize: 'var(--text-xs)',
+          }}>✕ Cerrar</button>
+        </div>
+        {chart}
+      </div>
+    );
+  }
+
+  return chart;
 }
 
 export function CashFlowView({ transactions, onImport }: {

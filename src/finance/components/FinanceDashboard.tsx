@@ -4,13 +4,15 @@ import { financeDB } from '../storage';
 import { IncomeCurveView } from './IncomeCurveView';
 import { CashFlowView } from './CashFlowView';
 import { NetWorthView } from './NetWorthView';
+import { SavingsView } from './SavingsView';
 
-type SubTab = 'ingresos' | 'flujo' | 'patrimonio';
+type SubTab = 'ingresos' | 'flujo' | 'patrimonio' | 'ahorro';
 
 const SUB_TABS: { id: SubTab; label: string; desc: string }[] = [
   { id: 'ingresos',   label: 'Ingresos',   desc: 'Curva de sueldo desde May 2022' },
   { id: 'flujo',      label: 'Gastos',     desc: 'Flujo mensual — importá el CSV del FRP' },
   { id: 'patrimonio', label: 'Patrimonio', desc: 'Activos y pasivos' },
+  { id: 'ahorro',     label: 'Ahorro',     desc: 'Ingreso vs ΔPatrimonio — tasa de retención real' },
 ];
 
 export function FinanceDashboard() {
@@ -66,6 +68,9 @@ export function FinanceDashboard() {
             setSnapshots(financeDB.load().netWorthSnapshots);
           }}
         />
+      )}
+      {subTab === 'ahorro' && (
+        <SavingsView snapshots={snapshots} incomeOverrides={incomeOverrides} />
       )}
     </div>
   );

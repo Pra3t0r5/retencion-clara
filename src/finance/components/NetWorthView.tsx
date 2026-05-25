@@ -50,12 +50,275 @@ function DonutChart({ rows, total }: { rows: AssetRow[]; total: number }) {
   );
 }
 
+// ─── Projection ───────────────────────────────────────────────────────────────
+
+function addMonths(dateStr: string, n: number): string {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCMonth(d.getUTCMonth() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+interface ProjPoint { date: string; nw: number; projected: boolean; }
+
+function buildProjection(
+  snapshots: NetWorthSnapshot[],
+  targetUSD: number,
+  trailing: number,
+): { points: ProjPoint[]; avgDelta: number; reachDate: string | null } {
+  const sorted = [...snapshots].sort((a, b) => a.date.localeCompare(b.date));
+  const slice  = sorted.slice(-(trailing + 1));
+  const deltas = slice.slice(1).map((s, i) => s.netWorthUSD - slice[i].netWorthUSD);
+  const avgDelta = deltas.length > 0 ? deltas.reduce((s, d) => s + d, 0) / deltas.length : 0;
+
+  const historical: ProjPoint[] = sorted.map(s => ({ date: s.date, nw: s.netWorthUSD, projected: false }));
+
+  const lastDate = sorted.at(-1)!.date;
+  const currentNW = sorted.at(-1)!.netWorthUSD;
+  const projected: ProjPoint[] = [];
+  let nw = currentNW;
+  let reachDate: string | null = null;
+
+  for (let m = 1; m <= 48; m++) {
+    nw += avgDelta;
+    const d = addMonths(lastDate, m);
+    projected.push({ date: d, nw, projected: true });
+    if (reachDate === null) {
+      if (avgDelta > 0 && nw >= targetUSD) reachDate = d;
+      if (avgDelta < 0 && nw <= targetUSD) reachDate = d;
+    }
+    if (reachDate && m >= 3) break; // at least 3 proj pts shown, stop after crossing
+    if (!reachDate && m >= 24) break; // cap at 24 if never reached
+  }
+
+  return { points: [...historical, ...projected], avgDelta, reachDate };
+}
+
+const PW = 760; const PH = 200; const PPL = 60; const PPR = 16; const PPT = 20; const PPB = 36;
+const PCW = PW - PPL - PPR; const PCH = PH - PPT - PPB;
+
+function ProjectionSection({ snapshots }: { snapshots: NetWorthSnapshot[] }) {
+  const currentNW = snapshots.at(-1)!.netWorthUSD;
+  const defaultTarget = Math.ceil(currentNW / 5000) * 5000 + 5000;
+
+  const [targetStr, setTargetStr] = useState(String(defaultTarget));
+  const [trailing, setTrailing] = useState(3);
+  const [tip, setTip] = useState<{ mx: number; my: number; pt: ProjPoint } | null>(null);
+
+  const target = parseFloat(targetStr) || defaultTarget;
+  const { points, avgDelta, reachDate } = buildProjection(snapshots, target, trailing);
+
+  const vals  = points.map(p => p.nw);
+  const minV  = Math.min(...vals, target) * 0.95;
+  const maxV  = Math.max(...vals, target) * 1.05 || 1;
+  const range = maxV - minV || 1;
+
+  const toX = (i: number) => PPL + (i / Math.max(points.length - 1, 1)) * PCW;
+  const toY = (v: number) => PPT + PCH - ((v - minV) / range) * PCH;
+
+  const histPts = points.filter(p => !p.projected);
+  const projPts = points.filter(p => p.projected);
+  const joinPt  = histPts.at(-1)!; // last historical = first proj anchor
+
+  const histPath = histPts.map((p, i) => {
+    const idx = points.indexOf(p);
+    return `${i === 0 ? 'M' : 'L'} ${toX(idx).toFixed(1)} ${toY(p.nw).toFixed(1)}`;
+  }).join(' ');
+
+  const projPath = [joinPt, ...projPts].map((p, i) => {
+    const idx = points.indexOf(p);
+    return `${i === 0 ? 'M' : 'L'} ${toX(idx).toFixed(1)} ${toY(p.nw).toFixed(1)}`;
+  }).join(' ');
+
+  const targetY = toY(target);
+
+  const xLabels = points.filter((_, i) => i === 0 || i === points.length - 1 ||
+    (points.length > 8 ? i % Math.ceil(points.length / 6) === 0 : true));
+
+  const yTicks = [0, 0.5, 1].map(f => ({
+    y: PPT + PCH - f * PCH,
+    label: fmtUSD(minV + f * range),
+  }));
+
+  const monthsToTarget = reachDate
+    ? (() => {
+        const a = new Date(snapshots.at(-1)!.date);
+        const b = new Date(reachDate);
+        return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+      })()
+    : null;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontWeight: 600 }}>Meta USD</span>
+        <input
+          type="number"
+          value={targetStr}
+          onChange={e => setTargetStr(e.target.value)}
+          style={{
+            padding: '4px 8px', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)', background: 'var(--color-bg)',
+            color: 'var(--color-text)', fontSize: 'var(--text-xs)', width: 110,
+          }}
+        />
+        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>Promedio trailing</span>
+        {([3, 6, 9] as const).map(n => (
+          <button key={n} onClick={() => setTrailing(n)} style={{
+            padding: '3px 10px', fontSize: 'var(--text-xs)', cursor: 'pointer',
+            borderRadius: 'var(--radius-sm)',
+            border: `1px solid ${trailing === n ? 'var(--color-primary)' : 'var(--color-border)'}`,
+            background: trailing === n ? 'var(--color-primary-bg)' : 'var(--color-surface)',
+            color: trailing === n ? 'var(--color-primary)' : 'var(--color-text-muted)',
+            fontWeight: trailing === n ? 600 : 400,
+          }}>{n}m</button>
+        ))}
+      </div>
+
+      {/* Summary */}
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius)', padding: '0.6rem 1rem',
+          fontSize: 'var(--text-xs)',
+        }}>
+          <span style={{ color: 'var(--color-text-muted)' }}>ΔNW promedio/mes </span>
+          <strong style={{ color: avgDelta >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+            {avgDelta >= 0 ? '+' : ''}{fmtUSD(avgDelta)}
+          </strong>
+        </div>
+        <div style={{
+          background: reachDate ? 'var(--color-primary-bg)' : 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius)', padding: '0.6rem 1rem',
+          fontSize: 'var(--text-xs)',
+        }}>
+          {reachDate && monthsToTarget !== null ? (
+            <>
+              <span style={{ color: 'var(--color-text-muted)' }}>Meta {fmtUSD(target)} en </span>
+              <strong style={{ color: 'var(--color-primary)' }}>
+                {monthsToTarget} {monthsToTarget === 1 ? 'mes' : 'meses'} — {reachDate.slice(0, 7)}
+              </strong>
+            </>
+          ) : (
+            <span style={{ color: 'var(--color-text-muted)' }}>
+              {avgDelta <= 0 ? 'ΔNW negativo — meta no alcanzable' : 'Meta no alcanzada en 24 meses'}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div style={{
+        position: 'relative', background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)', borderRadius: 'var(--radius)',
+        padding: '0.75rem', overflowX: 'auto',
+      }}>
+        <svg
+          viewBox={`0 0 ${PW} ${PH}`}
+          style={{ width: '100%', maxWidth: PW, display: 'block' }}
+          onMouseLeave={() => setTip(null)}
+          onMouseMove={e => { if (tip) setTip(t => t ? { ...t, mx: e.clientX, my: e.clientY } : null); }}
+        >
+          {/* Y grid */}
+          {yTicks.map((t, i) => (
+            <g key={i}>
+              <line x1={PPL} x2={PW - PPR} y1={t.y} y2={t.y} stroke="var(--color-border)" strokeWidth={0.8} />
+              <text x={PPL - 6} y={t.y + 4} textAnchor="end" fontSize={9} fill="var(--color-text-muted)">{t.label}</text>
+            </g>
+          ))}
+
+          {/* Target line */}
+          <line x1={PPL} x2={PW - PPR} y1={targetY} y2={targetY}
+            stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 4" opacity={0.8} />
+          <text x={PW - PPR - 2} y={targetY - 4} textAnchor="end" fontSize={8.5} fill="#f59e0b" fontWeight={600}>
+            Meta {fmtUSD(target)}
+          </text>
+
+          {/* Historical area + line */}
+          <path
+            d={`${histPath} L ${toX(histPts.length - 1).toFixed(1)} ${PPT + PCH} L ${PPL} ${PPT + PCH} Z`}
+            fill="var(--color-success)" opacity={0.06}
+          />
+          <path d={histPath} fill="none" stroke="var(--color-success)" strokeWidth={2} />
+
+          {/* Projected line — dashed blue */}
+          <path d={projPath} fill="none" stroke="var(--color-primary)" strokeWidth={1.5} strokeDasharray="6 3" opacity={0.75} />
+
+          {/* Hit areas */}
+          {points.map((p, i) => (
+            <rect
+              key={`hit-${i}`}
+              x={toX(i) - (i === 0 ? 0 : (toX(i) - toX(i - 1)) / 2)}
+              y={PPT}
+              width={
+                (i === 0 ? toX(1) - toX(0) : toX(i) - toX(i - 1)) / 2 +
+                (i === points.length - 1 ? 0 : (toX(i + 1) - toX(i)) / 2)
+              }
+              height={PCH}
+              fill="transparent"
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={e => setTip({ mx: e.clientX, my: e.clientY, pt: p })}
+            />
+          ))}
+
+          {/* Dots */}
+          {points.map((p, i) => (
+            <circle key={i} cx={toX(i)} cy={toY(p.nw)} r={4}
+              fill={p.projected ? 'var(--color-bg)' : 'var(--color-success)'}
+              stroke={p.projected ? 'var(--color-primary)' : 'var(--color-success)'}
+              strokeWidth={1.5}
+              style={{ pointerEvents: 'none' }}
+            />
+          ))}
+
+          {/* X labels */}
+          {xLabels.map((p, i) => (
+            <text key={i} x={toX(points.indexOf(p))} y={PH - 6} textAnchor="middle" fontSize={8.5}
+              fill={p.projected ? 'var(--color-primary)' : 'var(--color-text-muted)'}
+              opacity={p.projected ? 0.7 : 1}>
+              {p.date.slice(0, 7)}
+            </text>
+          ))}
+        </svg>
+
+        {tip && (
+          <div style={{
+            position: 'fixed', left: tip.mx + 14, top: tip.my - 10,
+            transform: tip.mx > window.innerWidth - 200 ? 'translateX(-110%)' : undefined,
+            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+            fontSize: 12, minWidth: 160, pointerEvents: 'none',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 9999, lineHeight: 1.7,
+          }}>
+            <div style={{ fontWeight: 700, marginBottom: 2 }}>{tip.pt.date.slice(0, 7)}</div>
+            <div style={{
+              color: tip.pt.projected ? 'var(--color-primary)' : 'var(--color-success)',
+              fontWeight: 700, fontSize: 14,
+            }}>{fmtUSD(tip.pt.nw)}</div>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: 10 }}>
+              {tip.pt.projected ? 'Proyectado' : 'Real'}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: '1rem', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+        <span>— Real</span>
+        <span style={{ color: 'var(--color-primary)' }}>- - Proyectado</span>
+        <span style={{ color: '#f59e0b' }}>- - Meta</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── History chart ────────────────────────────────────────────────────────────
 const W = 760; const H = 180; const PL = 56; const PR = 16; const PT = 16; const PB = 28;
 const CW = W - PL - PR; const CH = H - PT - PB;
 
 function HistoryChart({ snapshots }: { snapshots: NetWorthSnapshot[] }) {
-  const [tip, setTip] = useState<{ x: number; y: number; s: NetWorthSnapshot } | null>(null);
+  const [tip, setTip] = useState<{ mx: number; my: number; s: NetWorthSnapshot } | null>(null);
+  const [expanded, setExpanded] = useState(false);
   if (snapshots.length < 2) return null;
 
   const vals = snapshots.map(s => s.netWorthUSD);
@@ -79,42 +342,96 @@ function HistoryChart({ snapshots }: { snapshots: NetWorthSnapshot[] }) {
   }));
 
   return (
-    <div style={{ overflowX: 'auto', background: 'var(--color-surface)', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', padding: '0.75rem' }}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: W, display: 'block' }}>
-        {yTicks.map((t, i) => (
-          <g key={i}>
-            <line x1={PL} x2={W - PR} y1={t.y} y2={t.y} stroke="var(--color-border)" strokeWidth={0.8} />
-            <text x={PL - 6} y={t.y + 4} textAnchor="end" fontSize={9} fill="var(--color-text-muted)">{t.label}</text>
-          </g>
-        ))}
-        <path d={`${path} L ${pts.at(-1)!.x} ${PT + CH} L ${pts[0].x} ${PT + CH} Z`} fill="var(--color-success)" opacity={0.07} />
-        <path d={path} fill="none" stroke="var(--color-success)" strokeWidth={2} />
-        {pts.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={5}
-            fill="var(--color-success)" stroke="var(--color-surface)" strokeWidth={1.5}
-            style={{ cursor: 'pointer' }}
-            onMouseEnter={() => setTip({ x: p.x, y: p.y, s: p.s })}
-            onMouseLeave={() => setTip(null)}
-          />
-        ))}
-        {pts.map((p, i) => (
-          <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
-            {p.s.date.slice(0, 7)}
-          </text>
-        ))}
-        {tip && (() => {
-          const tx = Math.min(Math.max(tip.x - 70, PL), W - 148);
-          const ty = Math.max(tip.y - 60, PT);
-          return (
-            <g>
-              <rect x={tx} y={ty} width={140} height={52} rx={4} fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth={1} />
-              <text x={tx + 8} y={ty + 16} fontSize={10} fontWeight={700} fill="var(--color-text)">{tip.s.date}</text>
-              <text x={tx + 8} y={ty + 30} fontSize={10} fill="var(--color-success)" fontWeight={700}>{fmtUSD(tip.s.netWorthUSD)}</text>
-              {tip.s.notes && <text x={tx + 8} y={ty + 44} fontSize={8} fill="var(--color-text-muted)">{tip.s.notes.slice(0, 28)}</text>}
+    <div style={expanded ? {
+      position: 'fixed', inset: 0, zIndex: 50, background: 'var(--color-bg)',
+      display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem', overflow: 'auto',
+    } : {}}>
+      {expanded && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>Patrimonio neto — histórico</span>
+          <button onClick={() => setExpanded(false)} style={{
+            padding: '4px 12px', borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)', cursor: 'pointer',
+            background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 'var(--text-xs)',
+          }}>✕ Cerrar</button>
+        </div>
+      )}
+      <div style={{
+        position: 'relative', overflowX: 'auto',
+        background: 'var(--color-surface)', borderRadius: 'var(--radius)',
+        border: '1px solid var(--color-border)', padding: '0.75rem',
+        flex: expanded ? 1 : undefined,
+      }}>
+        {!expanded && (
+          <button onClick={() => setExpanded(true)} title="Pantalla completa" style={{
+            position: 'absolute', top: 8, right: 8, zIndex: 1,
+            padding: '3px 8px', fontSize: 11, cursor: 'pointer',
+            borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)',
+            background: 'var(--color-surface)', color: 'var(--color-text-muted)', lineHeight: 1,
+          }}>⛶</button>
+        )}
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width: '100%', maxWidth: expanded ? '100%' : W, display: 'block' }}
+          onMouseLeave={() => setTip(null)}
+        >
+          {yTicks.map((t, i) => (
+            <g key={i}>
+              <line x1={PL} x2={W - PR} y1={t.y} y2={t.y} stroke="var(--color-border)" strokeWidth={0.8} />
+              <text x={PL - 6} y={t.y + 4} textAnchor="end" fontSize={9} fill="var(--color-text-muted)">{t.label}</text>
             </g>
-          );
-        })()}
-      </svg>
+          ))}
+          <path d={`${path} L ${pts.at(-1)!.x} ${PT + CH} L ${pts[0].x} ${PT + CH} Z`} fill="var(--color-success)" opacity={0.07} />
+          <path d={path} fill="none" stroke="var(--color-success)" strokeWidth={2} />
+          {/* Hit areas */}
+          {pts.map((p, i) => (
+            <rect
+              key={`hit-${i}`}
+              x={p.x - (i === 0 ? 0 : (p.x - pts[i-1].x) / 2)}
+              y={PT}
+              width={
+                (i === 0 ? (pts[1]?.x ?? p.x) - p.x : p.x - pts[i-1].x) / 2 +
+                (i === pts.length - 1 ? 0 : (pts[i+1].x - p.x) / 2)
+              }
+              height={CH}
+              fill="transparent"
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={e => setTip({ mx: e.clientX, my: e.clientY, s: p.s })}
+            />
+          ))}
+          {pts.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r={5}
+              fill="var(--color-success)" stroke="var(--color-surface)" strokeWidth={1.5}
+              style={{ pointerEvents: 'none' }}
+            />
+          ))}
+          {pts.map((p, i) => (
+            <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
+              {p.s.date.slice(0, 7)}
+            </text>
+          ))}
+        </svg>
+        {tip && (
+          <div style={{
+            position: 'fixed', left: tip.mx + 14, top: tip.my - 10,
+            transform: tip.mx > window.innerWidth - 200 ? 'translateX(-110%)' : undefined,
+            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+            fontSize: 12, minWidth: 170, pointerEvents: 'none',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 9999, lineHeight: 1.7,
+          }}>
+            <div style={{ fontWeight: 700, marginBottom: 2 }}>{tip.s.date}</div>
+            <div style={{ color: 'var(--color-success)', fontWeight: 700, fontSize: 14 }}>
+              {fmtUSD(tip.s.netWorthUSD)}
+            </div>
+            {tip.s.notes && (
+              <div style={{ color: 'var(--color-text-muted)', fontSize: 11, marginTop: 2 }}>
+                {tip.s.notes}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -320,6 +637,19 @@ export function NetWorthView({
 
       {/* History chart */}
       {snapshots.length > 1 && <HistoryChart snapshots={snapshots} />}
+
+      {/* Projection */}
+      {snapshots.length > 1 && (
+        <div style={{
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius)', padding: '1rem',
+        }}>
+          <p style={{ margin: '0 0 0.75rem', fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-text)' }}>
+            Proyección de patrimonio
+          </p>
+          <ProjectionSection snapshots={snapshots} />
+        </div>
+      )}
 
       {/* Net worth hero */}
       <div style={{
