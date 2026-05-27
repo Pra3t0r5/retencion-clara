@@ -3,13 +3,15 @@ import type { IncomeEntry } from '../engine/schemas';
 import { buildPowerCurve, getModalityLabel } from '../engine/income';
 import type { PowerPoint } from '../engine/schemas';
 
+// [AI] Colors reference CSS token vars so dark mode overrides apply automatically.
+// Token values defined in src/styles/tokens.css under --color-chart-*
 const MODALITY_COLOR: Record<string, string> = {
-  'contractor':    '#a78bfa',
-  'crehana-ars':   '#fb923c',
-  'crehana-split': '#fbbf24',  // amarillo — transición ARS+USD
-  'crehana-usd':   '#16a34a',
-  'deel':          '#2563eb',
-  'manual':        '#64748b',
+  'contractor':    'var(--color-chart-contractor)',
+  'crehana-ars':   'var(--color-chart-ars)',
+  'crehana-split': 'var(--color-chart-split)',
+  'crehana-usd':   'var(--color-chart-usd)',
+  'deel':          'var(--color-chart-deel)',
+  'manual':        'var(--color-chart-manual)',
 };
 
 type Metric = 'nominalUSD' | 'realUSD' | 'realARS' | 'canastas';
@@ -72,22 +74,12 @@ export function IncomeCurveView({ overrides }: { overrides: IncomeEntry[] }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Metric selector */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <div className="finance-metric-pills">
         {(Object.keys(METRIC_LABELS) as Metric[]).map(m => (
           <button
             key={m}
+            className={`finance-metric-pill${metric === m ? ' active' : ''}`}
             onClick={() => setMetric(m)}
-            style={{
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-sm)',
-              border: `1px solid ${metric === m ? 'var(--color-primary)' : 'var(--color-border)'}`,
-              cursor: 'pointer',
-              background: metric === m ? 'var(--color-primary-bg)' : 'var(--color-surface)',
-              color: metric === m ? 'var(--color-primary)' : 'var(--color-text-muted)',
-              fontSize: 'var(--text-xs)',
-              fontWeight: metric === m ? 600 : 400,
-            }}
           >
             {METRIC_LABELS[m]}
           </button>
@@ -95,44 +87,24 @@ export function IncomeCurveView({ overrides }: { overrides: IncomeEntry[] }) {
       </div>
 
       {/* Chart */}
-      <div style={expanded ? {
-        position: 'fixed', inset: 0, zIndex: 50, background: 'var(--color-bg)',
-        display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem',
-        overflow: 'auto',
-      } : {}}>
-        {/* Fullscreen header when expanded */}
+      <div className={expanded ? 'finance-fullscreen' : ''}>
         {expanded && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+          <div className="finance-fullscreen-header">
+            <span className="finance-fullscreen-title">
               Curva de ingresos — {METRIC_LABELS[metric]}
             </span>
-            <button onClick={() => setExpanded(false)} style={{
-              padding: '4px 12px', borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--color-border)', cursor: 'pointer',
-              background: 'var(--color-surface)', color: 'var(--color-text)',
-              fontSize: 'var(--text-xs)',
-            }}>✕ Cerrar</button>
+            <button className="finance-fullscreen-close" onClick={() => setExpanded(false)}>
+              ✕ Cerrar
+            </button>
           </div>
         )}
 
-        <div style={{
-          position: 'relative', overflowX: 'auto',
-          background: 'var(--color-surface)', borderRadius: 'var(--radius)',
-          border: '1px solid var(--color-border)', padding: '0.75rem',
-          flex: expanded ? 1 : undefined,
-        }}>
-          {/* Fullscreen toggle button */}
+        <div className="finance-chart-wrap" style={{ flex: expanded ? 1 : undefined }}>
           {!expanded && (
             <button
+              className="finance-chart-expand-btn"
               onClick={() => setExpanded(true)}
               title="Pantalla completa"
-              style={{
-                position: 'absolute', top: 8, right: 8, zIndex: 1,
-                padding: '3px 8px', fontSize: 11, cursor: 'pointer',
-                borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)',
-                background: 'var(--color-surface)', color: 'var(--color-text-muted)',
-                lineHeight: 1,
-              }}
             >⛶</button>
           )}
 

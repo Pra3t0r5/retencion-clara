@@ -342,33 +342,18 @@ function HistoryChart({ snapshots }: { snapshots: NetWorthSnapshot[] }) {
   }));
 
   return (
-    <div style={expanded ? {
-      position: 'fixed', inset: 0, zIndex: 50, background: 'var(--color-bg)',
-      display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem', overflow: 'auto',
-    } : {}}>
+    <div className={expanded ? 'finance-fullscreen' : ''}>
       {expanded && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>Patrimonio neto — histórico</span>
-          <button onClick={() => setExpanded(false)} style={{
-            padding: '4px 12px', borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--color-border)', cursor: 'pointer',
-            background: 'var(--color-surface)', color: 'var(--color-text)', fontSize: 'var(--text-xs)',
-          }}>✕ Cerrar</button>
+        <div className="finance-fullscreen-header">
+          <span className="finance-fullscreen-title">Patrimonio neto — histórico</span>
+          <button className="finance-fullscreen-close" onClick={() => setExpanded(false)}>✕ Cerrar</button>
         </div>
       )}
-      <div style={{
-        position: 'relative', overflowX: 'auto',
-        background: 'var(--color-surface)', borderRadius: 'var(--radius)',
-        border: '1px solid var(--color-border)', padding: '0.75rem',
-        flex: expanded ? 1 : undefined,
-      }}>
+      <div className="finance-chart-wrap" style={{ flex: expanded ? 1 : undefined }}>
         {!expanded && (
-          <button onClick={() => setExpanded(true)} title="Pantalla completa" style={{
-            position: 'absolute', top: 8, right: 8, zIndex: 1,
-            padding: '3px 8px', fontSize: 11, cursor: 'pointer',
-            borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)',
-            background: 'var(--color-surface)', color: 'var(--color-text-muted)', lineHeight: 1,
-          }}>⛶</button>
+          <button className="finance-chart-expand-btn" onClick={() => setExpanded(true)} title="Pantalla completa">
+            ⛶
+          </button>
         )}
         <svg
           viewBox={`0 0 ${W} ${H}`}

@@ -5,6 +5,11 @@ import { IncomeCurveView } from './IncomeCurveView';
 import { CashFlowView } from './CashFlowView';
 import { NetWorthView } from './NetWorthView';
 import { SavingsView } from './SavingsView';
+import '../finance.css';
+
+// [AI] Sub-tabs use .segmented/.segment (not .tabs/.tab) to visually signal
+// "secondary selector within this section" vs primary app navigation.
+// See specs/012-mobile-ux/design-system.md §3.4
 
 type SubTab = 'ingresos' | 'flujo' | 'patrimonio' | 'ahorro';
 
@@ -39,13 +44,12 @@ export function FinanceDashboard() {
   const active = SUB_TABS.find(t => t.id === subTab)!;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {/* Sub-nav — reuse existing .tabs / .tab classes */}
-      <div className="tabs" style={{ marginBottom: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <div className="segmented">
         {SUB_TABS.map(t => (
           <button
             key={t.id}
-            className={`tab${subTab === t.id ? ' active' : ''}`}
+            className={`segment${subTab === t.id ? ' active' : ''}`}
             onClick={() => setSubTab(t.id)}
           >
             {t.label}
@@ -53,7 +57,6 @@ export function FinanceDashboard() {
         ))}
       </div>
 
-      {/* Context line */}
       <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
         {active.desc}
       </p>

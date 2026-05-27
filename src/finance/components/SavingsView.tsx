@@ -36,26 +36,12 @@ function SavingsChart({ points }: { points: SavingsPoint[] }) {
   }));
 
   const chart = (
-    <div style={{
-      position: 'relative',
-      background: 'var(--color-surface)',
-      border: '1px solid var(--color-border)',
-      borderRadius: 'var(--radius)',
-      padding: '0.75rem',
-      overflowX: 'auto',
-      flex: expanded ? 1 : undefined,
-    }}>
+    <div className="finance-chart-wrap" style={{ flex: expanded ? 1 : undefined }}>
       {!expanded && (
         <button
+          className="finance-chart-expand-btn"
           onClick={() => setExpanded(true)}
           title="Pantalla completa"
-          style={{
-            position: 'absolute', top: 8, right: 8, zIndex: 1,
-            padding: '3px 8px', fontSize: 11, cursor: 'pointer',
-            borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)',
-            background: 'var(--color-surface)', color: 'var(--color-text-muted)',
-            lineHeight: 1,
-          }}
         >⛶</button>
       )}
 
@@ -180,21 +166,10 @@ function SavingsChart({ points }: { points: SavingsPoint[] }) {
 
   if (expanded) {
     return (
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 50, background: 'var(--color-bg)',
-        display: 'flex', flexDirection: 'column', padding: '1rem', gap: '0.75rem',
-        overflow: 'auto',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-            Ahorro efectivo — ingreso vs ΔPatrimonio
-          </span>
-          <button onClick={() => setExpanded(false)} style={{
-            padding: '4px 12px', borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--color-border)', cursor: 'pointer',
-            background: 'var(--color-surface)', color: 'var(--color-text)',
-            fontSize: 'var(--text-xs)',
-          }}>✕ Cerrar</button>
+      <div className="finance-fullscreen">
+        <div className="finance-fullscreen-header">
+          <span className="finance-fullscreen-title">Ahorro efectivo — ingreso vs ΔPatrimonio</span>
+          <button className="finance-fullscreen-close" onClick={() => setExpanded(false)}>✕ Cerrar</button>
         </div>
         {chart}
       </div>
