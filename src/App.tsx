@@ -226,7 +226,7 @@ function TabF572({
 
 function RetenciónView({
   fiscalYear, activeMonth, setActiveMonth, f572, chartData,
-  recuperado, f572Events, onClearMonth, onOpenModal,
+  recuperado, f572Events, onClearMonth, onOpenModal, onComparar,
 }: {
   fiscalYear: FiscalYearData;
   activeMonth: number | null;
@@ -237,6 +237,7 @@ function RetenciónView({
   f572Events: Set<string>;
   onClearMonth: () => void;
   onOpenModal: () => void;
+  onComparar?: (a: number, b: number) => void;
 }) {
   const [subTab, setSubTab] = useState<RetSubTab>("resumen");
   const activePayslip = activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null;
@@ -248,9 +249,9 @@ function RetenciónView({
         active={activeMonth}
         onSelect={m => { setActiveMonth(m); setSubTab("resumen"); }}
         onAddMonth={onOpenModal}
-        onComparar={fiscalYear.size >= 2 ? () => {
+        onComparar={fiscalYear.size >= 2 && onComparar ? () => {
           const sorted = [...fiscalYear.keys()].sort((a, b) => a - b);
-          // comparar handled by parent via state lift if needed
+          onComparar(sorted[sorted.length - 2], sorted[sorted.length - 1]);
         } : undefined}
       />
 
@@ -483,6 +484,7 @@ export default function App() {
               f572Events={f572Events}
               onClearMonth={handleClearMonth}
               onOpenModal={() => setModalOpen(true)}
+              onComparar={(a, b) => setComparacionMeses({ a, b })}
             />
           )}
 
