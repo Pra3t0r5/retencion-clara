@@ -4,7 +4,7 @@
 // See specs/012-mobile-ux/ia.md for the full IA rationale.
 
 import { useState, useEffect } from "react";
-import { RECIBO_MAR, RECIBO_ABR, F572 as F572_DEFAULT } from "./data";
+import { RECIBO_MAR, RECIBO_ABR, RECIBO_MAY, F572 as F572_DEFAULT } from "./data";
 import { calcularGap, proyectarAbril, proyectarAnual, hasF572Data, calcularRecuperado, detectarF572Events } from "./engine/calculator";
 import type { PayslipData, F572Data } from "./engine/schemas";
 import { DetalleCalculo } from "./components/DetalleCalculo";
@@ -98,6 +98,9 @@ function TabResumen({
   f572Events: Set<string>;
 }) {
   const gaps = calcularGap(payslip, f572, payslip.meses);
+  // [AI] pendiente uses full-year declared (12) not just current month —
+  // F.572 can declare future months (e.g. mayo/junio) before those recibos exist
+  const gapsTotalAnual = calcularGap(payslip, f572, 12);
   const abril = proyectarAbril(payslip, f572);
   const anual = proyectarAnual(payslip, f572);
 
@@ -106,7 +109,7 @@ function TabResumen({
       <HeroStats
         retenido={payslip.retencion_acumulada}
         recuperado={recuperado}
-        pendiente={gaps.ahorro_estimado}
+        pendiente={gapsTotalAnual.ahorro_estimado}
         periodoLabel={`Ene–${MES_ABBR[payslip.meses - 1]} ${YEAR}`}
       />
 
@@ -369,8 +372,8 @@ export default function App() {
   }
 
   function handleLoadDemo() {
-    setFiscalYear(new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]));
-    setActiveMonth(4);
+    setFiscalYear(new Map([[3, RECIBO_MAR], [4, RECIBO_ABR], [5, RECIBO_MAY]]));
+    setActiveMonth(5);
     setF572(F572_DEFAULT);
     adapter.saveF572(YEAR, F572_DEFAULT);
   }
