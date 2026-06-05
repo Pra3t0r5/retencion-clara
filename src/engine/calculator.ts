@@ -148,8 +148,11 @@ export function calcularRecuperado(
     const mNext = sorted[i + 1];
     const gapM = calcularGap(fiscalYear.get(m)!, f572, m);
     const gapNext = calcularGap(fiscalYear.get(mNext)!, f572, mNext);
-    if (gapM.total_gap > 0 && gapNext.total_gap < 1_000) {
-      recuperado += gapM.ahorro_estimado;
+    const drop = gapM.total_gap - gapNext.total_gap;
+    // [AI] detect F572 application by relative drop (>50%), not absolute threshold —
+    // partial rectificativas leave residual gap that breaks the old < 1_000 check
+    if (gapM.total_gap > 0 && drop > gapM.total_gap * 0.5) {
+      recuperado += drop * gapM.tax_rate;
     }
   }
   return recuperado;
@@ -167,7 +170,8 @@ export function detectarF572Events(
     const mNext = sorted[i + 1];
     const gapM = calcularGap(fiscalYear.get(m)!, f572, m);
     const gapNext = calcularGap(fiscalYear.get(mNext)!, f572, mNext);
-    if (gapM.total_gap > 100_000 && gapNext.total_gap < 1_000) {
+    const drop = gapM.total_gap - gapNext.total_gap;
+    if (gapM.total_gap > 100_000 && drop > gapM.total_gap * 0.5) {
       events.add(MES_ABBR[mNext - 1]);
     }
   }

@@ -334,6 +334,9 @@ export default function App() {
         setActiveMonth(months[months.length - 1]);
       }
     });
+    adapter.loadF572(YEAR).then(stored => {
+      if (stored) setF572(stored);
+    });
   }, []);
 
   const activePayslip = activeMonth !== null ? (fiscalYear.get(activeMonth) ?? null) : null;
@@ -361,6 +364,7 @@ export default function App() {
 
   function handleF572Change(f: F572Data) {
     setF572(f);
+    adapter.saveF572(YEAR, f);
     setModalOpen(false);
   }
 
@@ -368,6 +372,7 @@ export default function App() {
     setFiscalYear(new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]));
     setActiveMonth(4);
     setF572(F572_DEFAULT);
+    adapter.saveF572(YEAR, F572_DEFAULT);
   }
 
   function handleClearMonth() {

@@ -195,11 +195,12 @@ describe('calcularGap edge cases', () => {
 describe('calcularRecuperado (spec-010)', () => {
   const EMPTY_F572_010 = { conyuge: false, hijos: 0, cuota_medica: {}, indumentaria: {} };
 
-  it('returns ahorro_estimado of March when Mar gap >0 and Apr gap ~0', () => {
+  it('returns drop × tax_rate when Mar gap drops >50% in Apr (partial rectificativa)', () => {
     const fy = new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]);
     const result = calcularRecuperado(fy, F572);
-    expect(result).toBeGreaterThan(339_180);
-    expect(result).toBeLessThan(340_180);
+    // drop = 1_037_781 (Mar gap 1_095_744 - Apr gap 57_962), tax_rate = 0.31
+    expect(result).toBeGreaterThan(321_000);
+    expect(result).toBeLessThan(323_000);
   });
 
   it('returns 0 when fiscal year has only one month', () => {
@@ -216,7 +217,7 @@ describe('calcularRecuperado (spec-010)', () => {
 describe('detectarF572Events (spec-010)', () => {
   const EMPTY_F572_010 = { conyuge: false, hijos: 0, cuota_medica: {}, indumentaria: {} };
 
-  it('returns Set containing "Abr" when gap drops from >100K to ~0 between Mar and Abr', () => {
+  it('returns Set containing "Abr" when gap drops >50% between Mar and Abr', () => {
     const fy = new Map([[3, RECIBO_MAR], [4, RECIBO_ABR]]);
     const result = detectarF572Events(fy, F572);
     expect(result.has('Abr')).toBe(true);
