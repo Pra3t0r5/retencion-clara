@@ -62,12 +62,12 @@ describe('App — T014: localStorage restore on mount', () => {
     render(<App />);
 
     await waitFor(() => {
-      // April (month 4) is last — its pill should have fontWeight 600 (active)
+      // April (month 4) is last — its pill should have .active class
       const abrPills = screen.getAllByText('Abr').filter(
         el => el.tagName === 'BUTTON'
       );
       expect(abrPills.length).toBeGreaterThan(0);
-      expect(abrPills[0].style.fontWeight).toBe('600');
+      expect(abrPills[0].className).toContain('active');
     });
   });
 });

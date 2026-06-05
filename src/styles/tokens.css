@@ -26,6 +26,18 @@
   /* Semantic — Warning (low-confidence extraction) */
   --color-warning:     #d97706;   /* amber-600 */
   --color-warning-bg:  #fffbeb;   /* amber-50  */
+
+  /* Semantic — Pending (not yet credited, neutral-orange) */
+  --color-pending:     #ea580c;   /* orange-600 */
+  --color-pending-bg:  #fff7ed;   /* orange-50  */
+
+  /* Chart — modality palette (fixed, maps to income-seed modalities) */
+  --color-chart-contractor: #a78bfa;   /* violet-400 */
+  --color-chart-ars:        #fb923c;   /* orange-400 */
+  --color-chart-split:      #fbbf24;   /* amber-400  */
+  --color-chart-usd:        #16a34a;   /* green-600  */
+  --color-chart-deel:       #2563eb;   /* blue-600   */
+  --color-chart-manual:     #64748b;   /* slate-500  */
 }
 
 /* Dark mode — class-based stub (prefers-color-scheme is the active trigger) */
@@ -52,6 +64,16 @@
 
     --color-warning:     #fbbf24;   /* amber-400 */
     --color-warning-bg:  #292314;
+
+    --color-pending:     #fb923c;   /* orange-400 */
+    --color-pending-bg:  #271a0e;
+
+    --color-chart-contractor: #c4b5fd;   /* violet-300 — brighter on dark */
+    --color-chart-ars:        #fdba74;   /* orange-300 */
+    --color-chart-split:      #fde68a;   /* amber-200  */
+    --color-chart-usd:        #4ade80;   /* green-400  */
+    --color-chart-deel:       #60a5fa;   /* blue-400   */
+    --color-chart-manual:     #94a3b8;   /* slate-400  */
   }
 }
 
@@ -74,6 +96,14 @@
   --color-success-bg:  #142514;
   --color-warning:     #fbbf24;
   --color-warning-bg:  #292314;
+  --color-pending:     #fb923c;
+  --color-pending-bg:  #271a0e;
+  --color-chart-contractor: #c4b5fd;
+  --color-chart-ars:        #fdba74;
+  --color-chart-split:      #fde68a;
+  --color-chart-usd:        #4ade80;
+  --color-chart-deel:       #60a5fa;
+  --color-chart-manual:     #94a3b8;
 }
 
 /* ── Spacing Scale — 4px base grid ─────────────────────────── */

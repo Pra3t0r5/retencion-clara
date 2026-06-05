@@ -76,7 +76,8 @@ export function F572Form({ initial, onSubmit }: Props) {
         <input
           className="form-input"
           style={{ width: 80 }}
-          type="number"
+          inputMode="numeric"
+          autoComplete="off"
           min="0"
           max="20"
           value={hijos}
@@ -86,7 +87,7 @@ export function F572Form({ initial, onSubmit }: Props) {
 
       <div className="form-section-title">Cuotas médico-asistenciales — Total: {$(cuotaTotal)}</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2) var(--space-3)", marginBottom: "var(--space-2)" }}>
-        {MESES.map(mes => (
+        {MESES.map((mes, idx) => (
           <div key={mes}>
             <label className="form-label">{mes.charAt(0).toUpperCase() + mes.slice(1)}</label>
             <input
@@ -94,6 +95,9 @@ export function F572Form({ initial, onSubmit }: Props) {
               value={cuota[mes] ?? ""}
               onChange={e => setCuota(prev => ({ ...prev, [mes]: e.target.value }))}
               placeholder="0"
+              inputMode="decimal"
+              autoComplete="off"
+              enterKeyHint={idx === MESES.length - 1 ? "next" : "next"}
             />
           </div>
         ))}
@@ -101,7 +105,7 @@ export function F572Form({ initial, onSubmit }: Props) {
 
       <div className="form-section-title">Indumentaria / Equipamiento — Total: {$(indTotal)}</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2) var(--space-3)", marginBottom: "var(--space-4)" }}>
-        {MESES.map(mes => (
+        {MESES.map((mes, idx) => (
           <div key={mes}>
             <label className="form-label">{mes.charAt(0).toUpperCase() + mes.slice(1)}</label>
             <input
@@ -109,6 +113,9 @@ export function F572Form({ initial, onSubmit }: Props) {
               value={ind[mes] ?? ""}
               onChange={e => setInd(prev => ({ ...prev, [mes]: e.target.value }))}
               placeholder="0"
+              inputMode="decimal"
+              autoComplete="off"
+              enterKeyHint={idx === MESES.length - 1 ? "done" : "next"}
             />
           </div>
         ))}

@@ -43,16 +43,16 @@ describe('MonthNav — T008', () => {
     expect(onAddMonth).toHaveBeenCalledOnce();
   });
 
-  it('active month pill has fontWeight 600; inactive has 400', () => {
+  it('active month pill has .active class; inactive does not', () => {
     render(<MonthNav months={[3, 1]} active={3} onSelect={vi.fn()} onAddMonth={vi.fn()} />);
-    expect(screen.getByText('Mar').style.fontWeight).toBe('600');
-    expect(screen.getByText('Ene').style.fontWeight).toBe('400');
+    expect(screen.getByText('Mar').className).toContain('active');
+    expect(screen.getByText('Ene').className).not.toContain('active');
   });
 
-  it('+ Agregar mes has primary border when active is null', () => {
+  it('+ Agregar mes has .active class when active is null', () => {
     render(<MonthNav months={[3, 1]} active={null} onSelect={vi.fn()} onAddMonth={vi.fn()} />);
     const addBtn = screen.getByText('+ Agregar mes');
-    expect(addBtn.style.border).toBe('1.5px solid var(--primary)');
+    expect(addBtn.className).toContain('active');
   });
 
   it('switching month: onSelect called with new month, not old', () => {
@@ -66,7 +66,7 @@ describe('MonthNav — T008', () => {
 
     // Simulate parent updating active to 4 after click
     rerender(<MonthNav months={[3, 1, 4]} active={4} onSelect={onSelect} onAddMonth={vi.fn()} />);
-    expect(screen.getByText('Abr').style.fontWeight).toBe('600');
-    expect(screen.getByText('Mar').style.fontWeight).toBe('400');
+    expect(screen.getByText('Abr').className).toContain('active');
+    expect(screen.getByText('Mar').className).not.toContain('active');
   });
 });

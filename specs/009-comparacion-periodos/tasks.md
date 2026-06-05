@@ -12,7 +12,7 @@ US3 (year-over-year) is P3 — out of scope for v1; stub at end.
 
 **Purpose**: Add `DiferenciaAnalisis` type before any tests or implementation can reference it.
 
-- [ ] T001 Add `DiferenciaAnalisis` Zod schema and TypeScript type to `src/engine/schemas.ts`:
+- [X] T001 Add `DiferenciaAnalisis` Zod schema and TypeScript type to `src/engine/schemas.ts`:
       ```typescript
       export const DiferenciaAnalisis = z.object({
         mesA: z.number().int().min(1).max(12),
@@ -44,7 +44,7 @@ Tests must be RED after T002. Only after T003 should they go GREEN.
 **Independent Test**: `npm test -- --reporter=verbose` shows 7 failing tests after T002,
 then all 7 pass after T003.
 
-- [ ] T002 Write 7 TDD tests for `calcularDiferencia` in `src/engine/calculator.test.ts`
+- [X] T002 Write 7 TDD tests for `calcularDiferencia` in `src/engine/calculator.test.ts`
       (add new `describe` block; import `calcularDiferencia` from `./calculator`):
 
       ```
@@ -78,7 +78,7 @@ then all 7 pass after T003.
 
       Tests MUST fail (import error expected — function not yet implemented).
 
-- [ ] T003 Implement `calcularDiferencia` in `src/engine/calculator.ts` — make all 7 T002 tests pass:
+- [X] T003 Implement `calcularDiferencia` in `src/engine/calculator.ts` — make all 7 T002 tests pass:
 
       ```typescript
       export function calcularDiferencia(
@@ -137,7 +137,7 @@ difference, classified as "Diferencia esperada ✓" or "Revisar con empleador �
 modal opens with Δ retencion ≈ −721K, "Rectificativa SIRADIG aplicada" ≥ 680K, badge
 "Diferencia esperada ✓".
 
-- [ ] T004 [P] [US1] Create `src/components/ComparacionSIRADIG.tsx` skeleton:
+- [X] T004 [P] [US1] Create `src/components/ComparacionSIRADIG.tsx` skeleton:
 
       ```typescript
       import type { PayslipData, F572Data } from '../engine/schemas';
@@ -169,13 +169,13 @@ modal opens with Δ retencion ≈ −721K, "Rectificativa SIRADIG aplicada" ≥ 
       }
       ```
 
-- [ ] T005 [P] [US1] Add `comparacionMeses` state to `src/App.tsx`:
+- [X] T005 [P] [US1] Add `comparacionMeses` state to `src/App.tsx`:
       ```typescript
       const [comparacionMeses, setComparacionMeses] = useState<{ a: number; b: number } | null>(null);
       ```
       No rendering yet — just the state declaration.
 
-- [ ] T006 [US1] Implement full decomposition table in `src/components/ComparacionSIRADIG.tsx`
+- [X] T006 [US1] Implement full decomposition table in `src/components/ComparacionSIRADIG.tsx`
       (replace placeholder from T004). All styles inline. Layout:
 
       **Header row**: "Comparación: {MES_ABBR[mesA-1]} vs {MES_ABBR[mesB-1]}"
@@ -201,14 +201,14 @@ modal opens with Δ retencion ≈ −721K, "Rectificativa SIRADIG aplicada" ≥ 
       Format all ARS values using: `new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value)`
       Positive values: green text; negative values: red text.
 
-- [ ] T007 [P] [US1] Add "Comparar" button to `src/components/MonthNav.tsx`:
+- [X] T007 [P] [US1] Add "Comparar" button to `src/components/MonthNav.tsx`:
       - Add optional prop `onComparar?: () => void`
       - Render button only when `months.length >= 2`
       - Position after existing month pills, before "+ Agregar mes"
       - Inline style: same border-radius/padding as pills; distinct accent color to indicate action
       - Label: "Comparar →"
 
-- [ ] T008 [US1] Wire `ComparacionSIRADIG` into `src/App.tsx`:
+- [X] T008 [US1] Wire `ComparacionSIRADIG` into `src/App.tsx`:
       - Pass `onComparar` to `MonthNav`:
         ```typescript
         onComparar={() => {
@@ -244,7 +244,7 @@ Clicking opens modal with correct decomposition values (verify manually or in br
 **Independent Test**: With Jan, Mar, Apr loaded — switch from Mar/Apr to Jan/Apr → all values
 update without page reload, Δ and causes reflect the new pair.
 
-- [ ] T009 [US2] Add Mes A / Mes B `<select>` dropdowns inside `src/components/ComparacionSIRADIG.tsx`:
+- [X] T009 [US2] Add Mes A / Mes B `<select>` dropdowns inside `src/components/ComparacionSIRADIG.tsx`:
       - Two `<select>` elements populated from `allMonths` prop (display MES_ABBR labels)
       - Initial values: `mesA.meses` and `mesB.meses`
       - `onChange`: call `onChangeMonths(newA, newB)` → parent updates state → component re-renders with new payslips
@@ -261,13 +261,13 @@ no page reload, same-month guard triggers when both selects match.
 
 ## Phase 5: Polish
 
-- [ ] T010 [P] Run `npm test` — all existing tests + 7 new `calcularDiferencia` tests pass (0 failures)
+- [X] T010 [P] Run `npm test` — all existing tests + 7 new `calcularDiferencia` tests pass (0 failures)
 
-- [ ] T011 [P] Viewport check: open Chrome DevTools → set viewport to 375px → open comparison modal
+- [X] T011 [P] Viewport check: open Chrome DevTools → set viewport to 375px → open comparison modal
       → verify no horizontal scrollbar on any of: header, headline section, cause table, badge
       (FR viewport NFR; SC-003)
 
-- [ ] T012 Manual acceptance test — run with real Mar + Apr 2026 data in browser:
+- [X] T012 Manual acceptance test — run with real Mar + Apr 2026 data in browser:
       1. Load RECIBO_MAR fixture → load RECIBO_ABR fixture (both months visible in MonthNav)
       2. Click "Comparar →" (≤2 interactions from multi-period view — SC-004)
       3. Verify modal opens with:

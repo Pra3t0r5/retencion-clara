@@ -199,8 +199,9 @@ describe('parseF572Text', () => {
   it('extracts indumentaria abril (multi-provider sum) ± 500', () => {
     const r = parseF572Text(F572_TEXT);
     const v = (r.indumentaria as Record<string,number>)['abril'] ?? 0;
-    expect(v).toBeGreaterThan(F572.indumentaria.abril - 500);
-    expect(v).toBeLessThan(F572.indumentaria.abril + 500);
+    // F572_TEXT fixture = pre-Berrini rectificativa: EPESF+AMX+ImagenDigital = 695_475.68
+    expect(v).toBeGreaterThan(695_475.68 - 500);
+    expect(v).toBeLessThan(695_475.68 + 500);
   });
 
   it('no low confidence fields', () => {

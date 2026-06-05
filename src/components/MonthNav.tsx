@@ -12,62 +12,25 @@ export function MonthNav({ months, active, onSelect, onAddMonth, onComparar }: P
   const sorted = [...months].sort((a, b) => a - b);
 
   return (
-    <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: 6,
-      marginBottom: 16,
-      paddingBottom: 12,
-      borderBottom: '1px solid var(--border)',
-    }}>
+    <div className="month-nav">
       {sorted.map(m => (
         <button
           key={m}
+          className={`month-chip${active === m ? ' active' : ''}`}
           onClick={() => onSelect(m)}
-          style={{
-            padding: '4px 12px',
-            borderRadius: 6,
-            border: active === m ? '1.5px solid var(--primary)' : '1px solid var(--border)',
-            background: active === m ? 'var(--primary-bg)' : 'var(--surface)',
-            color: active === m ? 'var(--primary)' : 'var(--muted)',
-            fontWeight: active === m ? 600 : 400,
-            fontSize: 12,
-            cursor: 'pointer',
-          }}
         >
           {MES_ABBR[m - 1]}
         </button>
       ))}
       <button
+        className={`month-chip add${active === null ? ' active' : ''}`}
         onClick={onAddMonth}
-        style={{
-          padding: '4px 12px',
-          borderRadius: 6,
-          border: active === null ? '1.5px solid var(--primary)' : '1px dashed var(--border)',
-          background: active === null ? 'var(--primary-bg)' : 'transparent',
-          color: active === null ? 'var(--primary)' : 'var(--muted)',
-          fontSize: 12,
-          cursor: 'pointer',
-        }}
       >
         + Agregar mes
       </button>
       {sorted.length >= 2 && onComparar && (
-        <button
-          onClick={onComparar}
-          style={{
-            padding: '4px 12px',
-            borderRadius: 6,
-            border: '1px solid var(--primary)',
-            background: 'var(--primary-bg)',
-            color: 'var(--primary)',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            marginLeft: 4,
-          }}
-        >
-          Comparar →
+        <button className="month-chip compare" onClick={onComparar}>
+          ¿Por qué cambió? →
         </button>
       )}
     </div>

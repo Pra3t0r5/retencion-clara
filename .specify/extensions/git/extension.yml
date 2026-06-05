@@ -50,83 +50,67 @@ hooks:
     description: "Create feature branch before specification"
   before_clarify:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit outstanding changes before clarification?"
+    optional: false
     description: "Auto-commit before spec clarification"
   before_plan:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit outstanding changes before planning?"
+    optional: false
     description: "Auto-commit before implementation planning"
   before_tasks:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit outstanding changes before task generation?"
+    optional: false
     description: "Auto-commit before task generation"
   before_implement:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit outstanding changes before implementation?"
+    optional: false
     description: "Auto-commit before implementation"
   before_checklist:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit outstanding changes before checklist?"
+    optional: false
     description: "Auto-commit before checklist generation"
   before_analyze:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit outstanding changes before analysis?"
+    optional: false
     description: "Auto-commit before analysis"
   before_taskstoissues:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit outstanding changes before issue sync?"
+    optional: false
     description: "Auto-commit before tasks-to-issues conversion"
   after_constitution:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit constitution changes?"
+    optional: false
     description: "Auto-commit after constitution update"
   after_specify:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit specification changes?"
+    optional: false
     description: "Auto-commit after specification"
   after_clarify:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit clarification changes?"
+    optional: false
     description: "Auto-commit after spec clarification"
   after_plan:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit plan changes?"
+    optional: false
     description: "Auto-commit after implementation planning"
   after_tasks:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit task changes?"
+    optional: false
     description: "Auto-commit after task generation"
   after_implement:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit implementation changes?"
+    optional: false
     description: "Auto-commit after implementation"
   after_checklist:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit checklist changes?"
+    optional: false
     description: "Auto-commit after checklist generation"
   after_analyze:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit analysis results?"
+    optional: false
     description: "Auto-commit after analysis"
   after_taskstoissues:
     command: speckit.git.commit
-    optional: true
-    prompt: "Commit after syncing issues?"
+    optional: false
     description: "Auto-commit after tasks-to-issues conversion"
 
 tags:

@@ -95,18 +95,25 @@ export function PayslipForm({ initial, onSubmit }: Props) {
   return (
     <form onSubmit={handleSubmit} style={{ padding: "0 0 var(--space-4)" }}>
 
-      {FIELDS.map(({ key, label }) => (
-        <div key={key} style={{ marginBottom: "var(--space-3)" }}>
-          <label className="form-label">{label}</label>
-          <input
-            className={`form-input${errors[key] ? " form-input--error" : ""}`}
-            value={raw[key] ?? ""}
-            onChange={e => handleChange(key, e.target.value)}
-            placeholder={key === "periodo" ? "Marzo 2026" : "0"}
-          />
-          {errors[key] && <div className="form-error">{errors[key]}</div>}
-        </div>
-      ))}
+      {FIELDS.map(({ key, label }, idx) => {
+        const isText = key === "periodo" || key === "empleador";
+        const isLast = idx === FIELDS.length - 1;
+        return (
+          <div key={key} style={{ marginBottom: "var(--space-3)" }}>
+            <label className="form-label">{label}</label>
+            <input
+              className={`form-input${errors[key] ? " form-input--error" : ""}`}
+              value={raw[key] ?? ""}
+              onChange={e => handleChange(key, e.target.value)}
+              placeholder={key === "periodo" ? "Marzo 2026" : "0"}
+              inputMode={isText ? "text" : "decimal"}
+              autoComplete="off"
+              enterKeyHint={isLast ? "done" : "next"}
+            />
+            {errors[key] && <div className="form-error">{errors[key]}</div>}
+          </div>
+        );
+      })}
 
       <button type="submit" className="form-submit-btn">
         Calcular

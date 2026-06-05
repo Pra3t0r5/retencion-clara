@@ -147,12 +147,12 @@ export function ComparacionSIRADIG({ mesA, mesB, f572A, f572B, allMonths, onChan
             </p>
             <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '4px 16px', marginBottom: 12 }}>
               <div style={rowStyle}>
-                <span>Efecto acumulativo fiscal</span>
+                <span>El impuesto se calcula desde enero</span>
                 {signed(result.causa_efecto_acumulativo, true)}
               </div>
               <div style={{ ...rowStyle, borderTop: '1px solid var(--border)' }}>
                 <span style={{ flex: 1 }}>
-                  Rectificativa SIRADIG aplicada
+                  F.572 aplicado en este período
                   {!hasF572Data(f572B) && (
                     <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)' }}>Sin datos F.572</span>
                   )}
@@ -164,11 +164,11 @@ export function ComparacionSIRADIG({ mesA, mesB, f572A, f572B, allMonths, onChan
                 </span>
               </div>
               <div style={{ ...rowStyle, borderTop: '1px solid var(--border)' }}>
-                <span>Cambio de salario bruto</span>
+                <span>Cambio en tu sueldo</span>
                 {signed(result.causa_salario, true)}
               </div>
               <div style={{ ...rowStyle, borderTop: '1px solid var(--border)' }}>
-                <span style={{ color: 'var(--muted)' }}>Cambio de tramo impositivo</span>
+                <span style={{ color: 'var(--muted)' }}>Cambio de alícuota</span>
                 <span style={{ color: 'var(--muted)' }}>{fmt(result.causa_bracket)}</span>
               </div>
               <div style={highlightRowStyle}>

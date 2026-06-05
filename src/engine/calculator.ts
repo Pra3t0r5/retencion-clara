@@ -137,6 +137,47 @@ export function hasF572Data(f: F572Data): boolean {
          Object.values(f.cuota_medica).some(v => v > 0);
 }
 
+export function calcularRecuperado(
+  fiscalYear: Map<number, PayslipData>,
+  f572: F572Data,
+): number {
+  const sorted = [...fiscalYear.keys()].sort((a, b) => a - b);
+  let recuperado = 0;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const m = sorted[i];
+    const mNext = sorted[i + 1];
+    const gapM = calcularGap(fiscalYear.get(m)!, f572, m);
+    const gapNext = calcularGap(fiscalYear.get(mNext)!, f572, mNext);
+    const drop = gapM.total_gap - gapNext.total_gap;
+    // [AI] detect F572 application by relative drop (>50%), not absolute threshold —
+    // partial rectificativas leave residual gap that breaks the old < 1_000 check
+    if (gapM.total_gap > 0 && drop > gapM.total_gap * 0.5) {
+      recuperado += drop * gapM.tax_rate;
+    }
+  }
+  return recuperado;
+}
+
+export function detectarF572Events(
+  fiscalYear: Map<number, PayslipData>,
+  f572: F572Data,
+): Set<string> {
+  const MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const sorted = [...fiscalYear.keys()].sort((a, b) => a - b);
+  const events = new Set<string>();
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const m = sorted[i];
+    const mNext = sorted[i + 1];
+    const gapM = calcularGap(fiscalYear.get(m)!, f572, m);
+    const gapNext = calcularGap(fiscalYear.get(mNext)!, f572, mNext);
+    const drop = gapM.total_gap - gapNext.total_gap;
+    if (gapM.total_gap > 100_000 && drop > gapM.total_gap * 0.5) {
+      events.add(MES_ABBR[mNext - 1]);
+    }
+  }
+  return events;
+}
+
 export function calcularDiferencia(
   rawA: PayslipData,
   rawB: PayslipData,

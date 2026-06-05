@@ -6,10 +6,24 @@ AI agent context for this repository.
 
 React + TypeScript client-side app for previewing Argentine income tax deductions (Art. 94, 4ta categoría). No backend — all calculation runs in the browser.
 
+## Documentation Rule — MANDATORY for every change
+
+Every change must be documented at **at least one** of these levels:
+
+1. **SpecKit** (`specs/NNN-feature/spec.md`) — product definitions, IA decisions, new features. Required before implementing anything non-trivial.
+2. **Design System** (`specs/012-mobile-ux/design-system.md`) — every new UI token, component pattern, or navigation rule goes here first.
+3. **AI Context comments** — for non-obvious decisions, constraints, or workarounds in code:
+   ```tsx
+   // [AI] <why, not what — the constraint or decision that isn't obvious from the code>
+   ```
+   Only when the WHY is not evident from reading the code. Do not narrate the what.
+
+No PR merges without satisfying at least one level. The spec drives implementation — code is the output, not the source of truth.
+
 ## Spec-Driven Workflow
 
 1. Read `specs/NNN-feature/spec.md` before implementing any feature
-2. Review `specs/NNN-feature/plan.md` for approach
+2. Review design system doc `specs/012-mobile-ux/design-system.md` for UI patterns and rules
 3. Check `specs/NNN-feature/tasks.md` for current work items
 4. Implement → test → commit → PR
 
@@ -19,7 +33,7 @@ React + TypeScript client-side app for previewing Argentine income tax deduction
 |-------|------|
 | UI | React 19 + TypeScript |
 | Bundler | Vite 6 |
-| Styling | Inline styles (no CSS framework — keep it simple) |
+| Styling | CSS classes + design tokens (see `specs/012-mobile-ux/design-system.md`) |
 | Validation | Zod |
 | PDF parsing | pdfjs-dist (offline) |
 | AI extraction | Claude API (optional, PDF fallback) |
@@ -71,6 +85,8 @@ See AGENTS.md for what agents can/cannot do.
 - localStorage (browser-native; no server) (004-multi-periodo-historicos)
 - TypeScript 5+ strict + React 19 + Zod (schema validation — already in use) (004-multi-periodo-historicos)
 - N/A — no new persistence (comparison is in-session only) (004-multi-periodo-historicos)
+- TypeScript 5+ strict, React 19 + Zod (schema validation — existing), Vitest (tests — existing) (010-dashboard-impacto-f572)
+- `FiscalYearData = Map<number, PayslipData>` in React state + localStorage (no change) (010-dashboard-impacto-f572)
 
 ## Recent Changes
 - feature/001-tax-calculator: Added TypeScript (strict) + React 19
