@@ -76,5 +76,5 @@ export const INCOME_SEED: IncomeEntry[] = [
   { year: 2026, month: 2,  netUSD: 4660, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Santander Feb 26 2026: $4,660.26' },
   { year: 2026, month: 3,  netUSD: 4420, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Santander Mar 26 2026: $4,419.70' },
   { year: 2026, month: 4,  netUSD: 5464, grossARS: null, netARS: null, taxARS: null, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Santander Apr 30 2026: $5,463.75 (posible bono/ajuste)' },
-  { year: 2026, month: 5,  netUSD: null, grossARS: 8_214_128.46, netARS: 6_492_808.00, taxARS: 991_705.92, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Wormhole payslip 22/05/2026; netUSD pendiente confirmar via Santander' },
+  { year: 2026, month: 5,  netUSD: 4396.45, grossARS: 8_214_128.46, netARS: 6_492_808.00, taxARS: 991_705.92, tcMEP: null, tcCCL: null, modality: 'deel', notes: 'Santander May 22 2026: $4,396.45' },
 ];
