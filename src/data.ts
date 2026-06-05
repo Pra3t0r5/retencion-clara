@@ -1,5 +1,5 @@
 // Fernando Albertengo — WORMHOLE S.A. — Marzo 2026
-// Source: official payslip + F.572 rectificativa 13/04/2026
+// Source: official payslip + F.572 rectificativa 04/06/2026
 // Used as test fixture and app demo default values — do not delete
 
 import type { PayslipData, F572Data } from './engine/schemas';
@@ -55,11 +55,15 @@ export const F572: F572Data = {
     febrero: 330_173.05,
     marzo:   340_275.69,
     abril:   350_687.47,
+    mayo:    363_171.14,
+    junio:   373_194.03,
   },
   indumentaria: {
     enero:   407_605.13,  // Avila $35.999 + EPESF $292.114 + MeLi $35.998 + AMX $43.494
     febrero:  43_586.94,  // AMX
     marzo:    46_100.22,  // AMX
-    abril:   695_475.68,  // EPESF $299.118 + AMX $51.357 + Imagen Digital $345.000
+    abril:   753_438.20,  // EPESF $299.118 + AMX $51.357 + Berrini $57.962 + Imagen Digital $345.000
+    mayo:  1_090_518.82,  // Ayala $260.000 + Strano $747.900 + Schiavi $33.000 + AMX $49.618
+    junio:   297_798.50,  // EPESF $237.474 + AMX $60.323
   },
 };
